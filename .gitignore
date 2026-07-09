@@ -1,0 +1,21 @@
+__pycache__/
+*.pyc
+.venv/
+.ipynb_checkpoints/
+.DS_Store
+*.egg-info/
+
+# gitignored per architecture: raw/interim/final data and generated figures
+data/raw/
+data/interim/
+data/final/
+figures/*.png
+figures/*.svg
+figures/interactive/*.html
+!figures/final/.gitkeep
+
+# secrets
+.env
+config.local.py
+
+.pytest_cache/

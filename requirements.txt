@@ -1,0 +1,17 @@
+requests
+pandas
+numpy
+pyarrow
+rapidfuzz
+pdfplumber
+beautifulsoup4
+lxml
+yfinance
+praw
+matplotlib
+altair
+plotly
+scipy
+statsmodels
+vaderSentiment
+pytest
