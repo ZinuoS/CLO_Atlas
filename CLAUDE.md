@@ -72,8 +72,9 @@ Do not add a dependency outside `requirements.txt` without asking first.
 `jupyter`/`ipykernel` were added beyond the original approved list because the
 architecture requires runnable `.ipynb` notebooks as deliverables; `openpyxl`
 was added because FINRA/SIFMA publish source data as `.xlsx` and pandas needs
-it as an engine to read those — both flagged here rather than silently
-expanded.
+it as an engine to read those; `html5lib` was added because pandas.read_html
+needs it as a fallback parser for some EDGAR XBRL-rendered report fragments
+that lxml alone can't parse — all flagged here rather than silently expanded.
 
 ## Allowed data domains discovered so far
 

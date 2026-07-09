@@ -18,3 +18,4 @@ pytest
 jupyter
 ipykernel
 openpyxl
+html5lib

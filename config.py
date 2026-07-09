@@ -190,8 +190,35 @@ CLO_CEF_CIKS = {
 # Section 3 — BDC / fund filings (EDGAR)
 # ---------------------------------------------------------------------------
 BDC_TICKERS = ["ARCC", "FSK", "OBDC", "BXSL", "OCSL", "GBDC", "PSEC", "MAIN"]
-# CIKs resolved at runtime via EDGAR full-text/company search and cached in
-# data/interim/edgar_cik_map.parquet; do not hardcode CIKs here.
+# Resolved from SEC's ticker->CIK map (www.sec.gov/files/company_tickers.json).
+BDC_CIKS = {
+    "ARCC": "1287750", "FSK": "1422183", "OBDC": "1655888", "BXSL": "1736035",
+    "OCSL": "1414932", "GBDC": "1476765", "PSEC": "1287032", "MAIN": "1396440",
+}
+
+# ---------------------------------------------------------------------------
+# Section 3 — BDC & fund filings (EDGAR)
+# ---------------------------------------------------------------------------
+# SEC Form ADV bulk firm-roster snapshots (FOIA data distribution). The SEC
+# has restructured this page's file paths multiple times over the years, so
+# each snapshot's full relative path is stored as-scraped rather than
+# assuming one shared base URL. These three give a real decade-spanning
+# manager-count/RAUM trend without pulling every historical snapshot (each
+# is ~40MB). Verified 2026-07-09.
+# Large closed-end bank-loan/floating-rate funds likely to hold CLO tranches
+# alongside broadly syndicated loans, resolved from SEC's ticker->CIK map.
+BANK_LOAN_FUND_CIKS = {
+    "EFT": "1288992",   # Eaton Vance Floating-Rate Income Trust
+    "BGH": "1521404",   # Barings Global Short Duration High Yield Fund
+    "JFR": "1276533",   # Nuveen Floating Rate Income Fund
+    "JQC": "1227476",   # Nuveen Credit Strategies Income Fund
+}
+
+ADV_BULK_SNAPSHOTS = {
+    "2012-01-01": "/files/data/frequently-requested-foia-document-information-about-registered-investment-advisers-and-exempt/ia010112.zip",
+    "2018-01-01": "/files/data/information-about-registered-investment-advisers-and-exempt-reporting-advisers/ia010118.zip",
+    "2026-07-01": "/files/investment/data/other/information-about-registered-investment-advisers-exempt-reporting-advisers/ia07012026.zip",
+}
 
 # ---------------------------------------------------------------------------
 # Section 5 — Rating agencies / presales
