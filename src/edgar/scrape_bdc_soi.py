@@ -43,6 +43,7 @@ REPORT_URL = "https://www.sec.gov/Archives/edgar/data/{cik}/{accession_nodash}/{
 _IDENTIFIER_PREFIX = "Investment, Identifier [Axis]: "
 _METRIC_ROW_LABELS = {"Amortized Cost", "Fair Value", "Principal", "Coupon", "Spread",
                        "Shares/Units", "Coupon, PIK", "Shares (as a percent)"}
+_DATE_PATTERN = re.compile(r"[A-Z][a-z]{2}\.\s\d{1,2},\s\d{4}")
 _INSTRUMENT_PATTERN = re.compile(
     r",\s*((?:First|Second|Third)\s+lien[^,]*|Senior\s+subordinated[^,]*|Unsecured[^,]*|"
     r"Preferred\s+stock[^,]*|Common\s+stock[^,]*|Warrant[^,]*|Membership\s+interest[^,]*|"
@@ -77,7 +78,16 @@ def parse_soi_report(html_text: str, fund: str) -> pd.DataFrame:
     period_cols = {cols[2]: "current", cols[4]: "prior"} if len(cols) >= 5 else {}
     if not period_cols:
         raise ValueError(f"unexpected SOI column layout for {fund}: {cols}")
-    period_dates = {label: re.sub(r"\.\d+$", "", str(label)) for label in period_cols}
+    # Column headers for the same reporting date vary by fact type — some
+    # carry extra unit text ("Mar. 31, 2026 USD ($) shares") depending on
+    # which sub-block of the table pandas merged the header from. Extract
+    # just the date so the same period always groups together regardless of
+    # which column happened to report it.
+    def _clean_period_label(label: str) -> str:
+        m = _DATE_PATTERN.search(str(label))
+        return m.group(0) if m else re.sub(r"\.\d+$", "", str(label))
+
+    period_dates = {label: _clean_period_label(label) for label in period_cols}
 
     records: dict[tuple[str, str], dict] = {}
     current_id = None
@@ -112,11 +122,28 @@ def parse_soi_report(html_text: str, fund: str) -> pd.DataFrame:
         if col in df.columns:
             df[col] = _to_num(df[col])
 
-    instrument = df["investment_identifier"].str.extract(_INSTRUMENT_PATTERN)[0]
-    df["instrument_type"] = instrument
-    df["company"] = df.apply(
-        lambda r: r["investment_identifier"][: -(len(r["instrument_type"]) + 2)]
-        if pd.notna(r["instrument_type"]) else r["investment_identifier"], axis=1)
+    # Different filers tag identifiers differently: ARCC-style is free-text
+    # comma-separated ("Company, First lien senior secured loan"); GBDC/OBDC/
+    # MAIN-style is pipe-delimited ("Company | One stop 1 | Non-Affiliated
+    # Issuer"). Try the pipe split first (unambiguous where present) and only
+    # fall back to the comma/instrument-keyword regex when there's no pipe —
+    # otherwise the pipe-style filers' "company" field ends up contaminated
+    # with instrument/affiliation suffix text and never matches anyone else's
+    # bare company name (this is exactly what broke cross-filer matching the
+    # first time this ran).
+    has_pipe = df["investment_identifier"].str.contains(r"\s\|\s")
+    pipe_parts = df["investment_identifier"].str.split(r"\s\|\s", n=1, regex=True)
+    df["company"] = df["investment_identifier"]
+    df["instrument_type"] = pd.NA
+    df.loc[has_pipe, "company"] = pipe_parts[has_pipe].str[0]
+    df.loc[has_pipe, "instrument_type"] = pipe_parts[has_pipe].str[1]
+
+    comma_instrument = df.loc[~has_pipe, "investment_identifier"].str.extract(_INSTRUMENT_PATTERN)[0]
+    comma_has_match = comma_instrument.notna()
+    comma_idx = comma_has_match[comma_has_match].index
+    df.loc[comma_idx, "instrument_type"] = comma_instrument.loc[comma_idx]
+    df.loc[comma_idx, "company"] = df.loc[comma_idx].apply(
+        lambda r: r["investment_identifier"][: -(len(r["instrument_type"]) + 2)], axis=1)
     return df
 
 

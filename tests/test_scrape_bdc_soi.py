@@ -15,6 +15,9 @@ FIXTURE_HTML = """
 <tr><td>Investment, Identifier [Axis]: Beta Holdings LLC, Common stock</td><td></td><td></td><td></td><td></td><td></td></tr>
 <tr><td>Fair Value</td><td></td><td>$ 12.0</td><td></td><td>$ 10.0</td><td></td></tr>
 <tr><td>Shares/Units</td><td></td><td>500000</td><td></td><td>500000</td><td></td></tr>
+<tr><td>Investment, Identifier [Axis]: Gamma Topco, LLC | One stop 1 | Non-Affiliated Issuer</td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td>Fair Value</td><td></td><td>$ 20.0</td><td></td><td>$ 19.0</td><td></td></tr>
+<tr><td>Principal</td><td></td><td>20.0</td><td></td><td>19.0</td><td></td></tr>
 """ + "\n".join(f"<tr><td>Filler row {i}</td><td></td><td></td><td></td><td></td><td></td></tr>" for i in range(100)) + """
 </table>
 </body></html>
@@ -43,6 +46,16 @@ def test_instrument_type_extracted_from_identifier():
     assert "first lien" in acme["instrument_type"].lower()
     beta = df[df["company"] == "Beta Holdings LLC"].iloc[0]
     assert "common stock" in beta["instrument_type"].lower()
+
+
+def test_pipe_delimited_identifier_company_not_contaminated_with_suffix():
+    """GBDC/OBDC/MAIN-style identifiers use 'Company | Instrument | Affiliation'
+    rather than ARCC's comma style — the company field must not include the
+    '| One stop 1 | ...' tail, or cross-filer matching silently breaks."""
+    df = parse_soi_report(FIXTURE_HTML, "TESTBDC")
+    gamma = df[df["company"].str.strip() == "Gamma Topco, LLC"]
+    assert len(gamma) > 0
+    assert "one stop" in gamma.iloc[0]["instrument_type"].lower()
 
 
 def test_no_identifier_rows_raises():
