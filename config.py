@@ -175,6 +175,16 @@ FED_CLO_HOLDER_CITATION = {
 # Section 2 — Listed CLO closed-end funds
 # ---------------------------------------------------------------------------
 CLO_CEF_TICKERS = ["ECC", "OXLC", "XFLT", "OCCI", "CCIF", "SPMC"]
+# Resolved once from SEC's ticker->CIK map (www.sec.gov/files/company_tickers.json)
+# and hardcoded since CIKs don't change; scrape_filings.py re-verifies at runtime.
+CLO_CEF_CIKS = {
+    "ECC": "1604174",
+    "OXLC": "1495222",
+    "XFLT": "1703079",
+    "OCCI": "1716951",
+    "CCIF": "1517767",
+    "SPMC": "1930147",
+}
 
 # ---------------------------------------------------------------------------
 # Section 3 — BDC / fund filings (EDGAR)
