@@ -17,3 +17,4 @@ vaderSentiment
 pytest
 jupyter
 ipykernel
+openpyxl

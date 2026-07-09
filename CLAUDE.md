@@ -70,8 +70,10 @@ frame out. Fixtures live in `tests/fixtures/`.
 
 Do not add a dependency outside `requirements.txt` without asking first.
 `jupyter`/`ipykernel` were added beyond the original approved list because the
-architecture requires runnable `.ipynb` notebooks as deliverables — flagged
-here rather than silently expanded.
+architecture requires runnable `.ipynb` notebooks as deliverables; `openpyxl`
+was added because FINRA/SIFMA publish source data as `.xlsx` and pandas needs
+it as an engine to read those — both flagged here rather than silently
+expanded.
 
 ## Allowed data domains discovered so far
 

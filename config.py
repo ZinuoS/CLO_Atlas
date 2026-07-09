@@ -127,6 +127,51 @@ FRED_SERIES = {
 }
 
 # ---------------------------------------------------------------------------
+# Section 4 — Official-sector data
+# ---------------------------------------------------------------------------
+# Extends FRED_SERIES with the additional macro comparison series Section 4
+# uses (BBB OAS alongside the HY OAS already pulled in Section 1).
+OFFICIAL_FRED_SERIES = {**FRED_SERIES, "BBB_OAS": "BAMLC0A4CBBB"}
+
+# FINRA/ICE Data Services structured-product pricing tables. Confirmed
+# working 2026-07-09: no login, a direct binary download, robots.txt on
+# www.finra.org doesn't block it. The file is a same-day snapshot re-published
+# daily at this fixed URL (not a historical archive), so — like the ETF NAV
+# snapshots in Section 1 — a real time series accretes only from whenever
+# this project starts scraping it regularly; Wayback backfill is a documented
+# future option since the URL is stable.
+FINRA_PXTABLES_URL = "https://cdn.finra.org/trace/FINRA_IDS_PXTABLES.xlsx"
+FINRA_PXTABLES_CLO_SHEET = "CBO-CDO-CLO"
+
+# The Fed's Enhanced Financial Accounts project has no dedicated CLO page
+# (checked directly), and the Financial Accounts (Z.1) "Issuers of ABS"
+# sector series aggregate all ABS issuers, not CLOs specifically. The one
+# genuinely CLO-specific breakdown the Fed has published is a narrative FEDS
+# Note with data only in table images/text, no linked machine-readable file.
+# Rather than fabricate a "scraped" series from that, these are the article's
+# own published numbers, hand-transcribed with full citation, and every
+# downstream use tags them TO-VERIFY (an external figure quoted from a
+# source, not computed in this repo) per the project's honesty doctrine.
+FED_CLO_HOLDER_CITATION = {
+    "source_title": "Who Owns U.S. CLO Securities? An Update by Tranche",
+    "source_url": "https://www.federalreserve.gov/econres/notes/feds-notes/who-owns-us-clo-securities-an-update-by-tranche-20200625.html",
+    "as_of": "2018-12-31",
+    "accessed": "2026-07-09",
+    "note": "Domestic holdings of Cayman-issued U.S. CLO securities, by investor type. "
+            "This is the most recent Fed-published sector breakdown found with no paywall; "
+            "it is not a live series and cannot be back-filled or updated by scraping.",
+    "holdings_by_investor_type_usd_millions": {
+        "Insurance company": 111_610,
+        "Mutual fund": 61_537,
+        "Depository institution": 61_204,
+        "Other financial organizations": 35_353,
+        "Nonfinancial organizations": 27_338,
+        "Pension fund": 22_359,
+        "Fund or other investment vehicle": 20_182,
+    },
+}
+
+# ---------------------------------------------------------------------------
 # Section 2 — Listed CLO closed-end funds
 # ---------------------------------------------------------------------------
 CLO_CEF_TICKERS = ["ECC", "OXLC", "XFLT", "OCCI", "CCIF", "SPMC"]

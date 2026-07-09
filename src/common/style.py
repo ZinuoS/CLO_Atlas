@@ -138,11 +138,17 @@ def save_figure(fig, name: str, headline: str, subtitle: str = "", source: str =
     out_dir.mkdir(parents=True, exist_ok=True)
 
     fig_w, fig_h = fig.get_size_inches()
-    # Rough char-per-line budget at this fontsize/figure width, so a long
-    # subtitle that wraps to 2 lines gets a second line of vertical room.
-    chars_per_line = max(fig_w * 11, 20)
-    subtitle_lines = -(-len(subtitle) // chars_per_line) if subtitle else 0
-    header_in = (0.42 + 0.28 * subtitle_lines) if subtitle else 0.55
+    # Rough char-per-line budgets at each block's fontsize/figure width, so
+    # long text wrapping to 2+ lines gets proportionally more vertical room
+    # instead of colliding with whatever comes below it.
+    headline_chars_per_line = max(fig_w * 7.5, 15)
+    headline_lines = max(1, -(-len(headline) // headline_chars_per_line))
+    subtitle_chars_per_line = max(fig_w * 11, 20)
+    subtitle_lines = -(-len(subtitle) // subtitle_chars_per_line) if subtitle else 0
+
+    headline_block_in = 0.22 * headline_lines + 0.08
+    subtitle_block_in = 0.28 * subtitle_lines
+    header_in = 0.22 + headline_block_in + subtitle_block_in
     # Leaves room below the plot area for axis tick labels + an axis title
     # (most charts have one) before the source/byline band starts.
     footer_in = 0.85 if notes else 0.7
@@ -150,9 +156,9 @@ def save_figure(fig, name: str, headline: str, subtitle: str = "", source: str =
     bottom = footer_in / fig_h
     fig.subplots_adjust(top=top, bottom=bottom)
 
-    fig.text(0.02, 1 - (0.28 / fig_h), headline, fontsize=15, fontweight="bold", color=INK, ha="left", va="top", wrap=True)
+    fig.text(0.02, 1 - (0.22 / fig_h), headline, fontsize=15, fontweight="bold", color=INK, ha="left", va="top", wrap=True)
     if subtitle:
-        fig.text(0.02, 1 - (0.55 / fig_h), subtitle, fontsize=10.5, color=INK_MUTED, ha="left", va="top", wrap=True)
+        fig.text(0.02, 1 - ((0.22 + headline_block_in) / fig_h), subtitle, fontsize=10.5, color=INK_MUTED, ha="left", va="top", wrap=True)
     if source:
         fig.text(0.02, 0.16 / fig_h, f"SOURCE: {source.upper()}", fontsize=7.5, color=INK_MUTED, ha="left", va="bottom")
     dateline = _dt.date.today().isoformat()

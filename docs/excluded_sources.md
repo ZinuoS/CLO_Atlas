@@ -18,4 +18,6 @@ Format:
 | `invesco.com` ICLO product page | Section 1 (ETF holdings) | Returns HTTP 406 to a scripted client regardless of Accept/User-Agent headers tried. | 2026-07-08 |
 | `clozfund.com` (Eldridge, fka Panagram, CLOZ) | Section 1 (ETF holdings) | Only quarterly holdings PDFs found (`Eldridge-CLOZ-Q1.pdf`, `-Q3.pdf`); no daily CSV/HTML table. Not excluded for licensing — just no daily granularity available. Presale-style PDF extraction could recover quarterly snapshots later if needed. | 2026-07-08 |
 
+| SIFMA US ABS/issuance statistics | Section 4 (issuance cycle) | The download link on sifma.org routes through an HubSpot lead-gen form (`share.hsforms.com`), not a direct file; a previously-known direct `.xlsx` path under `wp-content/uploads` now 404s (site rebuilt on Next.js). Automating a marketing lead-capture form isn't "polite public scraping" in spirit, so this is treated as gated rather than public, even though there's no paywall per se. | 2026-07-09 |
+
 _(This list grows as individual scrapers hit a paywall/login wall; each gets logged here rather than worked around.)_
