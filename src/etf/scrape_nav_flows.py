@@ -96,12 +96,16 @@ def scrape_nav_snapshot(tickers: list[str] | None = None) -> pd.DataFrame:
         except Exception as exc:
             logger.warning("%s: yfinance info/fast_info failed (%s), skipping snapshot", ticker, exc)
             continue
+        nav = info.get("navPrice")
+        total_assets = info.get("totalAssets") or info.get("netAssets")
+        shares_outstanding = fast.get("shares") or (total_assets / nav if (total_assets and nav) else None)
         rows.append({
             "date": today,
             "ticker": ticker,
-            "nav": info.get("navPrice"),
+            "nav": nav,
             "market_price": fast.get("lastPrice"),
-            "shares_outstanding": fast.get("shares"),
+            "total_assets": total_assets,
+            "shares_outstanding": shares_outstanding,
             "trailing_dividend_yield": info.get("dividendYield"),
         })
     return pd.DataFrame(rows)
@@ -141,7 +145,7 @@ def run() -> None:
     if len(snapshot):
         if SNAPSHOTS_OUT.exists():
             existing = pd.read_parquet(SNAPSHOTS_OUT)
-            combined = pd.concat([existing, snapshot], ignore_index=True)
+            combined = snapshot if existing.empty else pd.concat([existing, snapshot], ignore_index=True)
             combined = combined.drop_duplicates(subset=["date", "ticker"], keep="last")
         else:
             combined = snapshot
