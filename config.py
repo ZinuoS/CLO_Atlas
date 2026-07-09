@@ -67,16 +67,53 @@ TODAY = os.environ.get("CLO_ATLAS_TODAY")  # override for deterministic test run
 # ---------------------------------------------------------------------------
 # Section 1 — CLO ETFs
 # ---------------------------------------------------------------------------
+# Each entry's `holdings_url` / `holdings_parser` are populated only once
+# verified against the live issuer site (see docs/sources.md). Where a fund's
+# holdings page could not be resolved to a scrapable, non-JS-gated endpoint at
+# scaffold time, holdings_parser is None and scrape_holdings.py logs the gap
+# to docs/excluded_sources.md instead of guessing — NAV/price/flows for that
+# ticker still come through scrape_nav_flows.py via yfinance regardless.
 CLO_ETF_TICKERS = {
-    "JAAA": {"issuer": "Janus Henderson", "tranche_focus": "AAA"},
-    "JBBB": {"issuer": "Janus Henderson", "tranche_focus": "BBB"},
-    "JAAF": {"issuer": "Janus Henderson", "tranche_focus": "AAA"},
-    "CLOZ": {"issuer": "Panagram", "tranche_focus": "BB"},
-    "CLOB": {"issuer": "Panagram", "tranche_focus": "AAA"},
-    "CLOI": {"issuer": "VanEck", "tranche_focus": "IG"},
-    "CLOA": {"issuer": "BlackRock/iShares", "tranche_focus": "AAA"},
-    "CLOD": {"issuer": "BlackRock/iShares", "tranche_focus": "BBB"},
-    "ICLO": {"issuer": "Invesco", "tranche_focus": "AAA"},
+    "JAAA": {
+        "issuer": "Janus Henderson", "tranche_focus": "AAA",
+        "holdings_url": "https://www.janushenderson.com/en-us/advisor/product/jaaa-aaa-clo-etf/full-holdings/",
+        "holdings_parser": "janus_henderson_table",
+    },
+    "JBBB": {
+        "issuer": "Janus Henderson", "tranche_focus": "B-BBB",
+        "holdings_url": "https://www.janushenderson.com/en-us/advisor/product/jbbb-b-bbb-clo-etf/full-holdings/",
+        "holdings_parser": "janus_henderson_table",
+    },
+    "CLOZ": {
+        "issuer": "Eldridge (fka Panagram)", "tranche_focus": "BBB-B",
+        "holdings_url": None,  # clozfund.com publishes only quarterly PDFs, no daily CSV/HTML table found
+        "holdings_parser": None,
+    },
+    "CLOB": {
+        "issuer": "VanEck", "tranche_focus": "AA-BB",
+        "holdings_url": "https://www.vaneck.com/us/en/investments/aa-bb-clo-etf-clob/",
+        "holdings_parser": None,  # vaneck.com gated a cookie-consent redirect loop under plain HTTP; unresolved
+    },
+    "CLOI": {
+        "issuer": "VanEck", "tranche_focus": "IG",
+        "holdings_url": "https://www.vaneck.com/us/en/investments/clo-etf-cloi/",
+        "holdings_parser": None,  # same vaneck.com gating as CLOB
+    },
+    "CLOA": {
+        "issuer": "BlackRock/iShares", "tranche_focus": "AAA",
+        "holdings_url": "https://www.ishares.com/us/products/330488/ishares-aaa-clo-active-etf",
+        "holdings_parser": None,  # product page has no server-rendered full-holdings table; ajax CSV endpoint returns an HTML shell, not data
+    },
+    "CLOD": {
+        "issuer": "BlackRock/iShares", "tranche_focus": "BBB",
+        "holdings_url": None,  # product id not yet resolved
+        "holdings_parser": None,
+    },
+    "ICLO": {
+        "issuer": "Invesco", "tranche_focus": "AAA",
+        "holdings_url": None,  # invesco.com returns HTTP 406 to a plain scripted client
+        "holdings_parser": None,
+    },
 }
 
 # Comparison universe for Section 1 total-return analysis
