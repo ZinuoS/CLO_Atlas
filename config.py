@@ -228,6 +228,16 @@ RATING_AGENCIES = ["S&P", "Fitch"]
 # ---------------------------------------------------------------------------
 # Section 6 — Sentiment corpora
 # ---------------------------------------------------------------------------
+# Fed Financial Stability Report: discovered at runtime from the listing page
+# (federalreserve.gov/publications/financial-stability-report.htm), which
+# currently lists 2020-2026. BIS Quarterly Review: predictable URL pattern
+# https://www.bis.org/publ/qtrpdf/r_qt<YYMM>.pdf for quarter-end months
+# (03/06/09/12); generated programmatically and verified by HTTP status, not
+# hardcoded per-issue. IMF GFSR's publication page returns a redirect this
+# project couldn't resolve to a stable PDF pattern in the time available —
+# logged in docs/excluded_sources.md rather than guessed.
+REGULATOR_REPORT_START_YEAR = 2020
+BIS_QTR_MONTHS = ["03", "06", "09", "12"]
 REDDIT_SUBREDDITS = ["investing", "bonds", "fixedincome", "dividends", "wallstreetbets", "ETFs"]
 REDDIT_KEYWORDS = ["CLO", "collateralized loan obligation", "JAAA", "CLOZ", "Oxford Lane", "OXLC", "Eagle Point", "ECC"]
 REDDIT_DISAMBIGUATION_CONTEXT = ["loan", "tranche", "AAA", "credit", "ETF", "yield", "collateralized", "leveraged"]
