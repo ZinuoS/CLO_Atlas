@@ -233,11 +233,26 @@ RATING_AGENCIES = ["S&P", "Fitch"]
 # currently lists 2020-2026. BIS Quarterly Review: predictable URL pattern
 # https://www.bis.org/publ/qtrpdf/r_qt<YYMM>.pdf for quarter-end months
 # (03/06/09/12); generated programmatically and verified by HTTP status, not
-# hardcoded per-issue. IMF GFSR's publication page returns a redirect this
-# project couldn't resolve to a stable PDF pattern in the time available —
-# logged in docs/excluded_sources.md rather than guessed.
+# hardcoded per-issue. IMF GFSR: re-checked 2026-07-09 across several access
+# points (main pub page, elibrary.imf.org, direct file paths) — every one
+# returns HTTP 403 from an AkamaiGHost server, same as S&P Global Ratings.
+# Confirmed blocked, not a missed discovery step; logged in
+# docs/excluded_sources.md.
 REGULATOR_REPORT_START_YEAR = 2020
 BIS_QTR_MONTHS = ["03", "06", "09", "12"]
+
+# ECB Financial Stability Review: the index page's PDF links carry a random
+# hash suffix per issue (not derivable from the date), and only the 5 most
+# recent issues are server-rendered on the index page (older years appear to
+# require JS pagination this project didn't resolve). These 5 were extracted
+# from that page directly and verified reachable 2026-07-09.
+ECB_FSR_REPORTS = [
+    {"date": "2024-05", "slug": "ecb.fsr202405~7f212449c8.en"},
+    {"date": "2024-11", "slug": "ecb.fsr202411~dd60fc02c3.en"},
+    {"date": "2025-05", "slug": "ecb.fsr202505~0cde5244f6.en"},
+    {"date": "2025-11", "slug": "ecb.fsr202511~263b5810d4.en"},
+    {"date": "2026-05", "slug": "ecb.fsr202605~50566915a7.en"},
+]
 REDDIT_SUBREDDITS = ["investing", "bonds", "fixedincome", "dividends", "wallstreetbets", "ETFs"]
 REDDIT_KEYWORDS = ["CLO", "collateralized loan obligation", "JAAA", "CLOZ", "Oxford Lane", "OXLC", "Eagle Point", "ECC"]
 REDDIT_DISAMBIGUATION_CONTEXT = ["loan", "tranche", "AAA", "credit", "ETF", "yield", "collateralized", "leveraged"]

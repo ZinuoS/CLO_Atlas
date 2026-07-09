@@ -1,13 +1,17 @@
 """Regulator financial-stability report archives (Section 6): Fed Financial
-Stability Reports and BIS Quarterly Reviews, both free PDFs, no login.
+Stability Reports, BIS Quarterly Reviews, and ECB Financial Stability
+Reviews — all free PDFs, no login.
 
-IMF GFSR and ECB FSR were investigated but not resolved this pass — see
-docs/excluded_sources.md (IMF's page redirects to a structure this project
-couldn't map to a stable PDF pattern in the time available; ECB's index page
-only exposes its current issue's URL client-side, with the historical
-archive requiring more discovery than was in budget). Logged as a gap, not
-faked. Congressional testimony (govinfo.gov) and Fed speeches are a
-documented enhancement path, not implemented this pass either.
+IMF GFSR was re-checked on a second pass across several access points (the
+main publication page, elibrary.imf.org, and direct file paths); every one
+returns HTTP 403 from an AkamaiGHost server, the same bot wall blocking S&P
+Global Ratings — confirmed blocked, not a missed discovery step. ECB's
+index page exposes 5 recent issues' real PDF URLs server-side (each carries
+a random hash suffix, extracted directly rather than guessed); the older
+archive appears to need JS pagination this project didn't resolve. Both
+gaps are logged in docs/excluded_sources.md. Congressional testimony
+(govinfo.gov) and Fed speeches are a documented enhancement path, not
+implemented this pass either.
 """
 from __future__ import annotations
 
@@ -102,11 +106,38 @@ def scrape_bis_qtr(session: CachedSession) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+ECB_FSR_URL = "https://www.ecb.europa.eu/press/financial-stability-publications/fsr/pdf/{slug}.pdf"
+
+
+def scrape_ecb_fsr(session: CachedSession) -> pd.DataFrame:
+    rows = []
+    for item in config.ECB_FSR_REPORTS:
+        url = ECB_FSR_URL.format(slug=item["slug"])
+        try:
+            result = session.get(url)
+        except Exception as exc:
+            logger.warning("ECB FSR %s failed (%s)", item["date"], exc)
+            continue
+        if result.status != 200:
+            logger.warning("ECB FSR %s failed (status %d)", item["date"], result.status)
+            continue
+        try:
+            text = _pdf_bytes_to_tempfile_text(result.content)
+        except Exception as exc:
+            logger.warning("ECB FSR %s failed to parse (%s)", item["date"], exc)
+            continue
+        rows.append({"institution": "ECB", "report": "Financial Stability Review",
+                     "date": item["date"] + "-28", "url": url, "text": text})
+        logger.info("ECB FSR %s: %d chars", item["date"], len(text))
+    return pd.DataFrame(rows)
+
+
 def run() -> pd.DataFrame:
     session = CachedSession()
     fed = scrape_fed_fsr(session)
     bis = scrape_bis_qtr(session)
-    combined = pd.concat([fed, bis], ignore_index=True)
+    ecb = scrape_ecb_fsr(session)
+    combined = pd.concat([fed, bis, ecb], ignore_index=True)
 
     if combined.empty:
         logger.warning("no regulator reports scraped this run")
@@ -115,10 +146,12 @@ def run() -> pd.DataFrame:
         return pd.DataFrame()
 
     write_parquet(combined, OUT_PATH, Provenance(
-        source_urls=[FED_FSR_LISTING_URL, "https://www.bis.org/publ/qtrpdf/"],
+        source_urls=[FED_FSR_LISTING_URL, "https://www.bis.org/publ/qtrpdf/",
+                     "https://www.ecb.europa.eu/press/financial-stability-publications/fsr/"],
         scrape_timestamp=dt.datetime.now(dt.timezone.utc).isoformat(),
         parser="src.sentiment.scrape_regulators",
-        notes="IMF GFSR and ECB FSR not resolved this pass — see docs/excluded_sources.md.",
+        notes="IMF GFSR confirmed Akamai-blocked (403) on a second pass; ECB FSR covers its 5 "
+              "most recent issues only — see docs/excluded_sources.md.",
     ))
     logger.info("wrote %d regulator reports to %s", len(combined), OUT_PATH)
     return combined

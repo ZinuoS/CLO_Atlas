@@ -33,8 +33,8 @@ def viz_cdo_comparison_frequency():
     png, svg = save_figure(
         fig, "viz_cdo_comparison_frequency",
         headline="'CLOs are the new CDOs' language shows up unevenly across regulator reports.",
-        subtitle="Combined rate of CDO/2008/subprime-comparison language in Fed FSR and BIS Quarterly Review text, 2020-2026.",
-        source="clo-atlas, from Federal Reserve FSR and BIS Quarterly Review PDFs",
+        subtitle="Combined rate of CDO/2008/subprime-comparison language in Fed FSR, BIS Quarterly Review, and ECB FSR text.",
+        source="clo-atlas, from Federal Reserve FSR, BIS Quarterly Review, and ECB FSR PDFs",
     )
     logger.info("wrote %s / %s", png, svg)
     return png, svg

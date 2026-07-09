@@ -23,5 +23,6 @@ it — this file is append-only ground truth, not aspirational. Format:
 
 | 6 (sentiment) | `federalreserve.gov/publications/files/financial-stability-report-*.pdf` | Fed Financial Stability Reports, free PDFs | `src/sentiment/scrape_regulators.py` | 11 reports discovered from the listing page, 2020-2026. |
 | 6 (sentiment) | `bis.org/publ/qtrpdf/r_qt<YYMM>.pdf` | BIS Quarterly Review, free PDFs | `src/sentiment/scrape_regulators.py` | Predictable URL pattern for quarter-end months, generated programmatically and verified by HTTP status (not every YYMM exists). 24 reports, 2020-2026. |
+| 6 (sentiment) | `ecb.europa.eu/press/financial-stability-publications/fsr/pdf/<slug>.pdf` | ECB Financial Stability Review, free PDFs | `src/sentiment/scrape_regulators.py` | Slugs (with random hash suffix) extracted directly from the index page's server-rendered links, not guessed — see `config.ECB_FSR_REPORTS`. Covers the 5 most recent issues (May 2024-May 2026); older archive not resolved (see docs/excluded_sources.md). |
 
 _(Populated as each section's scrapers run against live endpoints and confirm the actual URL.)_

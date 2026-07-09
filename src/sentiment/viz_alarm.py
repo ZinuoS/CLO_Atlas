@@ -33,7 +33,7 @@ def viz_alarm_index_over_time():
     df = df.sort_values("date")
 
     fig, ax = plt.subplots(figsize=(9.5, 5.5))
-    for inst, color in [("Federal Reserve", ACCENT), ("BIS", WARM_GRAY[1])]:
+    for inst, color in [("Federal Reserve", ACCENT), ("BIS", WARM_GRAY[1]), ("ECB", WARM_GRAY[3])]:
         sub = df[df["institution"] == inst]
         if sub.empty:
             continue
@@ -49,11 +49,12 @@ def viz_alarm_index_over_time():
     png, svg = save_figure(
         fig, "viz_alarm_index_over_time",
         headline=headline,
-        subtitle="Mention rate x VADER negativity of CLO-mentioning text, Fed Financial Stability Reports "
-                  "and BIS Quarterly Reviews, 2020-2026 (0 = net-neutral-or-positive tone that report). The "
-                  "companion 'realized impairments stayed near zero' panel needs Section 5's rating-action "
-                  "data, which is currently gated (see docs/excluded_sources.md).",
-        source="clo-atlas, from Federal Reserve FSR and BIS Quarterly Review PDFs, VADER-scored",
+        subtitle="Mention rate x VADER negativity of CLO-mentioning text, Fed Financial Stability Reports, "
+                  "BIS Quarterly Reviews (2020-2026), and ECB Financial Stability Reviews (2024-2026, its 5 "
+                  "most recent issues) (0 = net-neutral-or-positive tone that report). The companion 'realized "
+                  "impairments stayed near zero' panel needs Section 5's rating-action data, which is "
+                  "currently gated (see docs/excluded_sources.md).",
+        source="clo-atlas, from Federal Reserve FSR, BIS Quarterly Review, and ECB FSR PDFs, VADER-scored",
     )
     logger.info("wrote %s / %s", png, svg)
     return png, svg
