@@ -9,6 +9,7 @@ before that, exactly like analysis_flows.py / analysis_nav_dislocation.py.
 from __future__ import annotations
 
 import logging
+import re
 
 import pandas as pd
 
@@ -26,11 +27,24 @@ OUT_TURNOVER = config.FINAL_DIR / "etf_tranche_turnover.parquet"
 
 AAA_FUNDS = [t for t, m in config.CLO_ETF_TICKERS.items() if m["tranche_focus"] == "AAA"]
 
+_CUSIP_PATTERN = re.compile(r"^[0-9A-Z]{9}$")
+# CLO AAA tranches trade close to par; a "price" outside this band is a sign
+# of a non-tranche line item (FX hedge notional, currency overlay) where par
+# and market value aren't denominated the same way, not a real market price.
+_SANE_PRICE_BAND = (80.0, 112.0)
 
-def _load_holdings() -> pd.DataFrame:
+
+def load_holdings() -> pd.DataFrame:
     if not HOLDINGS_PATH.exists():
         return pd.DataFrame()
-    return read_parquet(HOLDINGS_PATH).dropna(subset=["price"])
+    holdings = read_parquet(HOLDINGS_PATH).dropna(subset=["price"])
+    valid_cusip = holdings["cusip"].fillna("").str.match(_CUSIP_PATTERN)
+    in_band = holdings["price"].between(*_SANE_PRICE_BAND)
+    dropped = (~(valid_cusip & in_band)).sum()
+    if dropped:
+        logger.warning("dropping %d/%d holdings rows as non-tranche line items or implausible marks "
+                        "(bad CUSIP format or price outside %s)", dropped, len(holdings), _SANE_PRICE_BAND)
+    return holdings[valid_cusip & in_band]
 
 
 def aaa_price_index(holdings: pd.DataFrame) -> pd.DataFrame:
@@ -106,7 +120,7 @@ def tranche_turnover(holdings: pd.DataFrame) -> pd.DataFrame:
 
 
 def run() -> dict[str, pd.DataFrame]:
-    holdings = _load_holdings()
+    holdings = load_holdings()
 
     idx = aaa_price_index(holdings)
     write_parquet(idx, OUT_INDEX, Provenance(parser="src.etf.analysis_tranche_panel.aaa_price_index", source_urls=[]))

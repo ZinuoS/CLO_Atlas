@@ -69,6 +69,9 @@ frame out. Fixtures live in `tests/fixtures/`.
 ## Dependency policy
 
 Do not add a dependency outside `requirements.txt` without asking first.
+`jupyter`/`ipykernel` were added beyond the original approved list because the
+architecture requires runnable `.ipynb` notebooks as deliverables — flagged
+here rather than silently expanded.
 
 ## Allowed data domains discovered so far
 

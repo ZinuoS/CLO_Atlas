@@ -21,7 +21,6 @@ from pathlib import Path
 import matplotlib as mpl
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
-from matplotlib.patches import Patch
 
 import config
 
@@ -130,20 +129,36 @@ def save_figure(fig, name: str, headline: str, subtitle: str = "", source: str =
                  notes: str = "", out_dir: Path | None = None) -> tuple[Path, Path]:
     """Stamp the NYT-style scaffold (headline/subtitle/source/byline) onto `fig`
     and write both PNG @300dpi and SVG to figures/. Returns (png_path, svg_path).
+
+    Header/footer bands are sized in inches, not a fixed fraction of figure
+    height, so short-and-wide figures (small-multiples rows) don't get their
+    panel titles crushed against the headline the way a flat top=0.80 would.
     """
     out_dir = Path(out_dir or config.FIGURES_DIR)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    fig.subplots_adjust(top=0.80, bottom=0.14)
-    fig.text(0.02, 0.96, headline, fontsize=15, fontweight="bold", color=INK, ha="left", va="top", wrap=True)
+    fig_w, fig_h = fig.get_size_inches()
+    # Rough char-per-line budget at this fontsize/figure width, so a long
+    # subtitle that wraps to 2 lines gets a second line of vertical room.
+    chars_per_line = max(fig_w * 11, 20)
+    subtitle_lines = -(-len(subtitle) // chars_per_line) if subtitle else 0
+    header_in = (0.42 + 0.28 * subtitle_lines) if subtitle else 0.55
+    # Leaves room below the plot area for axis tick labels + an axis title
+    # (most charts have one) before the source/byline band starts.
+    footer_in = 0.85 if notes else 0.7
+    top = 1 - header_in / fig_h
+    bottom = footer_in / fig_h
+    fig.subplots_adjust(top=top, bottom=bottom)
+
+    fig.text(0.02, 1 - (0.28 / fig_h), headline, fontsize=15, fontweight="bold", color=INK, ha="left", va="top", wrap=True)
     if subtitle:
-        fig.text(0.02, 0.905, subtitle, fontsize=10.5, color=INK_MUTED, ha="left", va="top", wrap=True)
+        fig.text(0.02, 1 - (0.55 / fig_h), subtitle, fontsize=10.5, color=INK_MUTED, ha="left", va="top", wrap=True)
     if source:
-        fig.text(0.02, 0.02, f"SOURCE: {source.upper()}", fontsize=7.5, color=INK_MUTED, ha="left", va="bottom")
+        fig.text(0.02, 0.16 / fig_h, f"SOURCE: {source.upper()}", fontsize=7.5, color=INK_MUTED, ha="left", va="bottom")
     dateline = _dt.date.today().isoformat()
-    fig.text(0.98, 0.02, f"{BYLINE} · {dateline}", fontsize=7.5, color=INK_MUTED, ha="right", va="bottom")
+    fig.text(0.98, 0.16 / fig_h, f"{BYLINE} · {dateline}", fontsize=7.5, color=INK_MUTED, ha="right", va="bottom")
     if notes:
-        fig.text(0.02, 0.045, notes, fontsize=7, color=INK_MUTED, ha="left", va="bottom", style="italic")
+        fig.text(0.02, 0.30 / fig_h, notes, fontsize=7, color=INK_MUTED, ha="left", va="bottom", style="italic")
 
     png_path = out_dir / f"{name}.png"
     svg_path = out_dir / f"{name}.svg"

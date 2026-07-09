@@ -35,10 +35,22 @@ def _load_prices() -> pd.DataFrame:
     return prices.sort_values(["ticker", "date"])
 
 
-def growth_of_100(prices: pd.DataFrame) -> pd.DataFrame:
+def growth_of_100(prices: pd.DataFrame, common_start: pd.Timestamp | None = None) -> pd.DataFrame:
+    """$100 grown from a single shared start date across every ticker, so the
+    comparison is apples-to-apples. Defaults to the earliest CLO ETF's
+    inception (JAAA, Oct 2020) — comparison benchmarks with longer histories
+    (AGG, LQD, etc. go back to the 2000s) are clipped to that window rather
+    than plotted from their own, much earlier, inception.
+    """
+    if common_start is None:
+        clo_prices = prices[prices["ticker"].isin(config.CLO_ETF_TICKERS)]
+        common_start = clo_prices["date"].min()
+
     rows = []
     for ticker, grp in prices.groupby("ticker"):
-        grp = grp.sort_values("date")
+        grp = grp[grp["date"] >= common_start].sort_values("date")
+        if grp.empty:
+            continue
         rets = grp["adj_close"].pct_change().fillna(0)
         growth = 100 * (1 + rets).cumprod()
         rows.append(pd.DataFrame({"date": grp["date"], "ticker": ticker, "growth_of_100": growth.values}))
