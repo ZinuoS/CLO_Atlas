@@ -183,9 +183,13 @@ def build_lifecycle_parties(deal: Deal, out_dir: Path | None = None) -> Path:
 
 
 def main():
-    deal = load_deal()
-    print(f"wrote {build_lifecycle_timeline(deal)}")
-    print(f"wrote {build_lifecycle_parties(deal)}")
+    for path in run():
+        print(f"wrote {path}")
+
+
+def run(deal: Deal | None = None) -> list[Path]:
+    deal = deal or load_deal()
+    return [build_lifecycle_timeline(deal), build_lifecycle_parties(deal)]
 
 
 if __name__ == "__main__":

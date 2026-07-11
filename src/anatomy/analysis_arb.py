@@ -65,7 +65,7 @@ def simulated_base_case_equity_yield_pct(deal: Deal | None = None) -> float:
 
 def main():
     deal = load_deal()
-    bridge = build_excess_spread_bridge(deal)
+    bridge = run(deal)
     print(bridge.to_string(index=False))
     print(f"\nAnalytical (steady-state) implied equity yield: {bridge.attrs['implied_equity_yield_pct']:.1f}%")
 
@@ -74,13 +74,17 @@ def main():
     print("These will not match exactly: the analytical bridge is a static, single-period approximation; "
           "the simulation reflects the actual amortizing, sequential-paydown path over the deal's life.")
 
+
+def run(deal: Deal | None = None) -> pd.DataFrame:
+    deal = deal or load_deal()
+    bridge = build_excess_spread_bridge(deal)
     out_path = config.FINAL_DIR / "anatomy" / "excess_spread_bridge.parquet"
     write_parquet(bridge, out_path, Provenance(
         source_urls=[deal.citation.get("source_url", "")], parser="src.anatomy.analysis_arb.build_excess_spread_bridge",
         notes="Steady-state analytical approximation (TO-VERIFY: expected-loss and fee-basis conventions), "
               "cross-checked against the engine's simulated base-case equity yield in main().",
     ))
-    print(f"\nwrote {out_path}")
+    return bridge
 
 
 if __name__ == "__main__":

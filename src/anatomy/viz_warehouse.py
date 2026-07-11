@@ -64,8 +64,12 @@ def build_warehouse_ramp_chart(deal: Deal, out_dir: Path | None = None) -> Path:
 
 
 def main():
-    deal = load_deal()
-    print(f"wrote {build_warehouse_ramp_chart(deal)}")
+    print(f"wrote {run()}")
+
+
+def run(deal: Deal | None = None) -> Path:
+    deal = deal or load_deal()
+    return build_warehouse_ramp_chart(deal)
 
 
 if __name__ == "__main__":

@@ -68,10 +68,13 @@ ALL_SCENARIO_KEYS = ("base", "covid_shock", "severe_recession", "post_reinvestme
 
 
 def main():
-    deal = load_deal()
-    for key in ALL_SCENARIO_KEYS:
-        path = build_coverage_dashboard(deal, key)
+    for key, path in run().items():
         print(f"{key}: wrote {path}")
+
+
+def run(deal: Deal | None = None) -> dict[str, Path]:
+    deal = deal or load_deal()
+    return {key: build_coverage_dashboard(deal, key) for key in ALL_SCENARIO_KEYS}
 
 
 if __name__ == "__main__":

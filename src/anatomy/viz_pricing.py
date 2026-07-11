@@ -131,10 +131,13 @@ def build_excess_spread_chart(deal: Deal, out_dir: Path | None = None) -> Path:
 
 
 def main():
-    deal = load_deal()
-    print(f"wrote {build_capital_structure_chart(deal)}")
-    print(f"wrote {build_wal_sensitivity_chart(deal)}")
-    print(f"wrote {build_excess_spread_chart(deal)}")
+    for path in run():
+        print(f"wrote {path}")
+
+
+def run(deal: Deal | None = None) -> list[Path]:
+    deal = deal or load_deal()
+    return [build_capital_structure_chart(deal), build_wal_sensitivity_chart(deal), build_excess_spread_chart(deal)]
 
 
 if __name__ == "__main__":

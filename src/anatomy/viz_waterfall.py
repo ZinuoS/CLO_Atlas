@@ -135,9 +135,13 @@ def build_single_moment_explainers(deal: Deal, out_dir: Path | None = None) -> l
 
 
 def main():
-    deal = load_deal()
-    for p in build_single_moment_explainers(deal):
+    for p in run():
         print(f"wrote {p}")
+
+
+def run(deal: Deal | None = None) -> list[Path]:
+    deal = deal or load_deal()
+    return build_single_moment_explainers(deal)
 
 
 if __name__ == "__main__":

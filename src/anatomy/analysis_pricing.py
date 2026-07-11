@@ -65,14 +65,17 @@ def build_wal_sensitivity_table(deal: Deal | None = None,
 
 
 def main():
-    deal = load_deal()
-    cap_table = build_capital_structure_table(deal)
+    cap_table, wal_table = run()
     print(cap_table.to_string(index=False))
-
-    wal_table = build_wal_sensitivity_table(deal)
     print()
     print(wal_table.pivot(index="tranche", columns="scenario", values="wal_years")
           .reindex(TRANCHE_ORDER).to_string())
+
+
+def run(deal: Deal | None = None) -> tuple[pd.DataFrame, pd.DataFrame]:
+    deal = deal or load_deal()
+    cap_table = build_capital_structure_table(deal)
+    wal_table = build_wal_sensitivity_table(deal)
 
     out_dir = config.FINAL_DIR / "anatomy"
     write_parquet(cap_table, out_dir / "capital_structure.parquet", Provenance(
@@ -85,8 +88,7 @@ def main():
         notes="WAL is computed from this project's own simulated principal cash flows, not a circular or "
               "third-party figure.",
     ))
-    print(f"\nwrote {out_dir / 'capital_structure.parquet'}")
-    print(f"wrote {out_dir / 'wal_sensitivity.parquet'}")
+    return cap_table, wal_table
 
 
 if __name__ == "__main__":

@@ -67,13 +67,16 @@ def build_warehouse_schedule(deal: Deal | None = None) -> pd.DataFrame:
 
 
 def main():
-    deal = load_deal()
-    df = build_warehouse_schedule(deal)
+    df = run()
     print(df.to_string(index=False))
     print(f"\nPeak warehouse equity at risk: ${df.attrs['max_equity_at_risk']:,.0f} "
           f"({df.attrs['equity_at_risk_pct_of_clo_equity']:.1f}% of the eventual CLO equity tranche size)")
     print(f"Total carry earned by warehouse equity during ramp: ${df.attrs['total_ramp_carry_to_equity']:,.0f}")
 
+
+def run(deal: Deal | None = None) -> pd.DataFrame:
+    deal = deal or load_deal()
+    df = build_warehouse_schedule(deal)
     out_path = config.FINAL_DIR / "anatomy" / "warehouse_schedule.parquet"
     write_parquet(df, out_path, Provenance(
         source_urls=[deal.citation.get("source_url", "")],
@@ -81,7 +84,7 @@ def main():
         notes="Model-driven, not scrape-driven: warehouse advance rate, financing spread, and ramp shape are "
               "market-standard conventions (config.ANATOMY_WAREHOUSE), not circular figures. TO-VERIFY throughout.",
     ))
-    print(f"\nwrote {out_path}")
+    return df
 
 
 if __name__ == "__main__":

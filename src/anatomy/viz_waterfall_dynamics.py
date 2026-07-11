@@ -468,21 +468,26 @@ def build_allocation_stream(deal: Deal, scenario_keys: tuple[str, ...] = ALL_SCE
 
 
 def main():
-    deal = load_deal()
-    for scenario_key in ALL_SCENARIO_KEYS:
-        paths = build_click_through(deal, scenario_key)
+    result = run()
+    for scenario_key, paths in result["click_through"].items():
         print(f"{scenario_key}: wrote {len(paths)} frames")
         for p in paths:
             print(f"  {p}")
+    for scenario_key, path in result["ghost_overlay"].items():
+        print(f"ghost overlay {scenario_key}: {path}")
+    for scenario_key, path in result["time_matrix"].items():
+        print(f"time matrix {scenario_key}: {path}")
+    print(f"allocation stream: {result['allocation_stream']}")
 
-    for scenario_key in SHOCK_SCENARIO_KEYS:
-        path = build_ghost_overlay(deal, scenario_key)
-        print(f"ghost overlay: {path}")
-        path = build_time_matrix(deal, scenario_key)
-        print(f"time matrix: {path}")
 
-    path = build_allocation_stream(deal)
-    print(f"allocation stream: {path}")
+def run(deal: Deal | None = None) -> dict:
+    deal = deal or load_deal()
+    return {
+        "click_through": {key: build_click_through(deal, key) for key in ALL_SCENARIO_KEYS},
+        "ghost_overlay": {key: build_ghost_overlay(deal, key) for key in SHOCK_SCENARIO_KEYS},
+        "time_matrix": {key: build_time_matrix(deal, key) for key in SHOCK_SCENARIO_KEYS},
+        "allocation_stream": build_allocation_stream(deal),
+    }
 
 
 if __name__ == "__main__":
