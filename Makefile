@@ -1,8 +1,8 @@
-.PHONY: all setup test macro etf cef edgar official ratings sentiment figures synthesis clean
+.PHONY: all setup test macro etf cef edgar official ratings sentiment sentiment_v2 cef_deep_dive future figures synthesis clean
 
 PYTHON := .venv/bin/python
 
-all: macro etf official cef ratings edgar sentiment synthesis
+all: macro etf official cef ratings edgar sentiment sentiment_v2 cef_deep_dive future synthesis
 
 setup:
 	python3 -m venv .venv
@@ -113,6 +113,62 @@ sentiment:
 	$(PYTHON) -m src.sentiment.viz_retail
 	$(PYTHON) -m src.sentiment.viz_tone
 
+# --- Sentiment v2: rebuilt alarm index + high-frequency attention backbone -
+sentiment_v2:
+	$(PYTHON) -m src.sentiment.scrape_regulators_v2
+	$(PYTHON) -m src.sentiment.scrape_gdelt
+	$(PYTHON) -m src.sentiment.scrape_news_rss
+	$(PYTHON) -m src.sentiment.scrape_yf_news
+	$(PYTHON) -m src.sentiment.scrape_pressreleases
+	$(PYTHON) -m src.sentiment.scrape_stocktwits
+	$(PYTHON) -m src.sentiment.scrape_ssrn_arxiv
+	$(PYTHON) -m src.sentiment.analysis_alarm_v2
+	$(PYTHON) -m src.sentiment.analysis_attention_tone
+	$(PYTHON) -m src.sentiment.analysis_scorer_validation
+	$(PYTHON) -m src.sentiment.viz_alarm_v2
+	$(PYTHON) -m src.sentiment.viz_attention
+	$(PYTHON) -m src.sentiment.viz_validation
+	$(PYTHON) -m src.sentiment.ledger
+
+# --- CEF deep-dive: Oxford Lane capital machine + capital-structure ---------
+cef_deep_dive:
+	$(PYTHON) -m src.cef.scrape_capital_actions
+	$(PYTHON) -m src.cef.scrape_preferreds
+	$(PYTHON) -m src.cef.scrape_13f_ownership
+	$(PYTHON) -m src.cef.analysis_capital_machine
+	$(PYTHON) -m src.cef.analysis_cost_of_capital
+	$(PYTHON) -m src.cef.analysis_distribution_quality
+	$(PYTHON) -m src.cef.analysis_portfolio_style
+	$(PYTHON) -m src.cef.analysis_nav_translation
+	$(PYTHON) -m src.cef.analysis_ownership
+	$(PYTHON) -m src.cef.analysis_demand_transmission
+	$(PYTHON) -m src.cef.viz_flywheel
+	$(PYTHON) -m src.cef.viz_cost_of_capital
+	$(PYTHON) -m src.cef.viz_distribution
+	$(PYTHON) -m src.cef.viz_style
+	$(PYTHON) -m src.cef.viz_wrapper
+	$(PYTHON) -m src.cef.ledger
+
+# --- Part C: where the asset class is going (closing slides) ---------------
+future:
+	$(PYTHON) -m src.future.scrape_product_pipeline
+	$(PYTHON) -m src.future.scrape_mm_share
+	$(PYTHON) -m src.future.scrape_litigation
+	$(PYTHON) -m src.future.scrape_rulemaking
+	$(PYTHON) -m src.future.scrape_trends
+	$(PYTHON) -m src.future.scrape_etf_filings_options
+	$(PYTHON) -m src.future.analysis_pipeline
+	$(PYTHON) -m src.future.analysis_composition_shift
+	$(PYTHON) -m src.future.analysis_legal_regime
+	$(PYTHON) -m src.future.analysis_maturation_scorecard
+	$(PYTHON) -m src.future.analysis_scenarios
+	$(PYTHON) -m src.future.viz_pipeline
+	$(PYTHON) -m src.future.viz_composition
+	$(PYTHON) -m src.future.viz_legal
+	$(PYTHON) -m src.future.viz_scorecard
+	$(PYTHON) -m src.future.viz_watchlist
+	$(PYTHON) -m src.future.ledger
+
 # --- Regenerate every chart from cache (no network) -------------------------
 figures:
 	$(PYTHON) -m jupyter nbconvert --to notebook --execute --inplace notebooks/0_macro_opener.ipynb
@@ -122,6 +178,9 @@ figures:
 	$(PYTHON) -m jupyter nbconvert --to notebook --execute --inplace notebooks/4_official.ipynb
 	$(PYTHON) -m jupyter nbconvert --to notebook --execute --inplace notebooks/5_ratings.ipynb
 	$(PYTHON) -m jupyter nbconvert --to notebook --execute --inplace notebooks/6_sentiment.ipynb
+	$(PYTHON) -m jupyter nbconvert --to notebook --execute --inplace notebooks/8_sentiment_v2.ipynb
+	$(PYTHON) -m jupyter nbconvert --to notebook --execute --inplace notebooks/9_cef_oxford_lane.ipynb
+	$(PYTHON) -m jupyter nbconvert --to notebook --execute --inplace notebooks/10_future.ipynb
 
 synthesis: figures
 	$(PYTHON) -m jupyter nbconvert --to notebook --execute --inplace notebooks/7_synthesis.ipynb

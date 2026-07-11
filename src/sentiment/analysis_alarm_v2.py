@@ -22,17 +22,33 @@ from src.sentiment.scoring import additive_alarm_index, coverage_table, score_do
 logger = logging.getLogger("clo_atlas.sentiment.analysis_alarm_v2")
 
 REPORTS_PATH = config.INTERIM_DIR / "regulator_reports.parquet"
+REPORTS_V2_PATH = config.INTERIM_DIR / "regulator_reports_v2.parquet"  # BoE (scrape_regulators_v2.py)
 
 OUT_SECTIONS = config.FINAL_DIR / "alarm_v2_section_scores.parquet"
 OUT_REPORT_LEVEL = config.FINAL_DIR / "alarm_v2_by_report.parquet"
 OUT_COVERAGE = config.FINAL_DIR / "alarm_v2_coverage.parquet"
 
 
+def _load_all_reports() -> pd.DataFrame:
+    """Fed/BIS/ECB (scrape_regulators.py) + BoE (scrape_regulators_v2.py) —
+    concatenated so this module picks up new institutions with no further
+    code change as scrape_regulators_v2.py grows (FSOC/OFR/congressional
+    testimony are documented next steps there)."""
+    frames = []
+    if REPORTS_PATH.exists():
+        frames.append(read_parquet(REPORTS_PATH))
+    if REPORTS_V2_PATH.exists():
+        frames.append(read_parquet(REPORTS_V2_PATH))
+    if not frames:
+        return pd.DataFrame(columns=["institution", "report", "date", "url", "text"])
+    return pd.concat(frames, ignore_index=True)
+
+
 def section_scores() -> pd.DataFrame:
-    if not REPORTS_PATH.exists():
+    reports = _load_all_reports()
+    if reports.empty:
         logger.warning("no regulator reports cached; run scrape_regulators.py first")
         return pd.DataFrame(columns=["institution", "date", "section", "vulnerability_rate", "lm_negative_rate"])
-    reports = read_parquet(REPORTS_PATH)
     frames = [score_document(row["text"], row["institution"], row["date"]) for _, row in reports.iterrows()]
     frames = [f for f in frames if len(f)]
     if not frames:
@@ -42,9 +58,9 @@ def section_scores() -> pd.DataFrame:
 
 
 def report_level_index(sections: pd.DataFrame) -> pd.DataFrame:
-    if not REPORTS_PATH.exists():
+    reports = _load_all_reports()
+    if reports.empty:
         return pd.DataFrame(columns=["institution", "date", "mentions_per_1000", "alarm_index_v2"])
-    reports = read_parquet(REPORTS_PATH)
 
     rows = []
     for _, report in reports.iterrows():
@@ -76,8 +92,7 @@ def run() -> dict[str, pd.DataFrame]:
         notes="Additive index: z(mentions) + z(vulnerability_rate) + z(lm_negative_rate), z'd within institution.",
     ))
 
-    reports = read_parquet(REPORTS_PATH) if REPORTS_PATH.exists() else pd.DataFrame()
-    coverage = coverage_table(reports)
+    coverage = coverage_table(_load_all_reports())
     write_parquet(coverage, OUT_COVERAGE, Provenance(parser="src.sentiment.analysis_alarm_v2.coverage_table", source_urls=[]))
 
     logger.info("sections=%d, report_level=%d reports across %d institutions, coverage=%d institution-years",

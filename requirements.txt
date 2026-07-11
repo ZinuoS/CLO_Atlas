@@ -20,3 +20,4 @@ ipykernel
 openpyxl
 html5lib
 feedparser
+pytrends

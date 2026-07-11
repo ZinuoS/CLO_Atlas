@@ -58,9 +58,13 @@ NYT-style data-journalism charts introducing CLOs as an asset class.
 Scaffold -> Macro opener (slides 1-2: regime, disintermediation, scale,
 income — `notebooks/0_macro_opener.ipynb`) -> Section 1 (ETF) -> Section 4
 (official) -> Section 2 (CEF) -> Section 5 (ratings) -> Section 3 (EDGAR/BDC,
-hardest parsing) -> Section 6 (sentiment) -> `notebooks/7_synthesis.ipynb`. At
-each section boundary: run that section's notebook top-to-bottom from cache,
-commit, update `docs/sources.md`.
+hardest parsing) -> Section 6 (sentiment) -> `notebooks/7_synthesis.ipynb` ->
+Sentiment v2 rebuild (`src/sentiment/scoring.py` + `analysis_alarm_v2.py`,
+`notebooks/8_sentiment_v2.ipynb`) -> CEF/Oxford Lane deep-dive
+(`notebooks/9_cef_oxford_lane.ipynb`) -> Part C, future direction
+(`src/future/`, `notebooks/10_future.ipynb`). At each section boundary: run
+that section's notebook top-to-bottom from cache, commit, update
+`docs/sources.md`.
 
 ## Testing
 
@@ -75,7 +79,9 @@ architecture requires runnable `.ipynb` notebooks as deliverables; `openpyxl`
 was added because FINRA/SIFMA publish source data as `.xlsx` and pandas needs
 it as an engine to read those; `html5lib` was added because pandas.read_html
 needs it as a fallback parser for some EDGAR XBRL-rendered report fragments
-that lxml alone can't parse — all flagged here rather than silently expanded.
+that lxml alone can't parse; `feedparser` and `pytrends` were pre-approved
+for the sentiment-v2/Part-C build (RSS parsing and Google Trends,
+respectively) — all flagged here rather than silently expanded.
 
 ## Allowed data domains discovered so far
 
