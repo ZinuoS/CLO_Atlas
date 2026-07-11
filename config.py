@@ -499,3 +499,27 @@ ANATOMY_DEAL = {
 # a convenience for reviewing them and must never drive a design decision
 # (fixed frame count/spacing, layout) — off by default.
 ANATOMY_BUILD_GIFS = False
+
+# Warehouse-facility economics: warehouse lending terms are a private
+# arrangement between the arranger/warehouse lender and the manager, never
+# disclosed in a public offering circular (ours included — a refinancing
+# circular for an already-closed deal has no reason to restate the original
+# 2023 warehouse terms). Every figure here is a market-standard convention,
+# not a circular figure. [TO-VERIFY: entire block]
+ANATOMY_WAREHOUSE = {
+    # 90% advance rate (10% at-risk equity) — real warehouse facilities are
+    # highly levered because the lender's exposure is short-duration and
+    # overcollateralized; the residual 10% capital commitment is sized to
+    # land in the same order of magnitude as the CLO's own equity tranche,
+    # since it is largely the SAME capital that rolls into that tranche at
+    # closing (a lower, more "cautious-sounding" advance rate would imply
+    # warehouse equity multiples larger than the deal's own equity check,
+    # which is not how these facilities are actually sized in practice).
+    "advance_rate_pct": 90.0,       # % of ramped par financed by warehouse debt; remainder is at-risk equity capital
+    "spread_bps_over_sofr": 180,    # warehouse facility financing spread
+    "loan_yield_bps_over_sofr": ANATOMY_DEAL["was_bps_over_sofr"],  # ramped loans priced like the eventual portfolio
+    "ramp_start_quarter": ANATOMY_DEAL["dates"]["warehouse_open_quarter"],
+    "takeout_quarter": ANATOMY_DEAL["dates"]["closing_quarter"],
+    "target_ramp_par": ANATOMY_DEAL["target_par"],
+    "ramp_profile": "s_curve",      # slow-fast-slow accumulation, not linear — standard ramp shape
+}
