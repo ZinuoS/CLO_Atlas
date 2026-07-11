@@ -14,6 +14,16 @@ figures/*.svg
 figures/interactive/*.html
 !figures/final/.gitkeep
 
+# Third-party bulk download, freely re-fetchable via
+# `python -m src.common.text --fetch-lexicon` — not raw/interim/final, but
+# same "don't commit fetchable data" logic (8.7MB, no reason to bloat the repo).
+data/_lexicons/
+
+# data/_llm_cache/ is NOT gitignored: entries there (both entity-resolution
+# tiebreaks and sentiment-rubric scores) are hand-curated/reviewed judgments,
+# not regenerable scrape output — see src/common/entity.py's
+# llm_tiebreak_cached and src/sentiment/scoring.py's llm_rubric_score_cached.
+
 # secrets
 .env
 config.local.py

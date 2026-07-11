@@ -9,6 +9,8 @@ picking one.
 """
 from __future__ import annotations
 
+import datetime as _dt
+import json
 import logging
 import re
 from collections import Counter
@@ -106,6 +108,64 @@ class LMLexicon:
         )
 
 
+_SRAF_CSV_LINK_PATTERN = re.compile(
+    r'CSV Format:.{0,40}?<a href="(https://drive\.google\.com/file/d/([^/]+)/[^"]*)"', re.DOTALL)
+
+
+def fetch_lm_dictionary(session, force: bool = False) -> Path:
+    """Download the Loughran-McDonald master dictionary CSV to
+    config.LM_DICTIONARY_PATH. Previously blocked (the landing page appeared
+    client-rendered on an earlier pass); re-checked 2026-07-11 and the CSV
+    link is in fact present in the server-rendered HTML — it just points to
+    a Google Drive share (`drive.google.com/file/d/<id>/...`), not a direct
+    file host, discovered by reading the actual page source, not guessed.
+    The share resolves through Drive's `uc?export=download` redirect to a
+    plain CSV for a file this size (no interstitial virus-scan/confirm page
+    at ~87k rows), verified by fetching it directly.
+    """
+    if config.LM_DICTIONARY_PATH.exists() and not force:
+        logger.info("LM dictionary already cached at %s", config.LM_DICTIONARY_PATH)
+        return config.LM_DICTIONARY_PATH
+
+    landing = session.get(config.LM_DICTIONARY_LANDING_PAGE)
+    if landing.status != 200:
+        raise RuntimeError(f"LM dictionary landing page failed: status {landing.status}")
+    match = _SRAF_CSV_LINK_PATTERN.search(landing.text())
+    if not match:
+        raise RuntimeError(
+            f"could not find the CSV download link on {config.LM_DICTIONARY_LANDING_PAGE}; "
+            "the page structure may have changed since 2026-07-11."
+        )
+    file_id = match.group(2)
+    download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+    result = session.get(download_url)
+    if result.status != 200:
+        raise RuntimeError(f"LM dictionary download failed: status {result.status} from {download_url}")
+
+    text = result.text()
+    header = text.splitlines()[0].lower() if text else ""
+    if "word" not in header or "negative" not in header:
+        raise RuntimeError(
+            f"downloaded content from {download_url} doesn't look like the LM dictionary "
+            f"(header: {header[:120]!r}) — Drive may have served an interstitial page instead of the file."
+        )
+
+    config.LM_DICTIONARY_PATH.parent.mkdir(parents=True, exist_ok=True)
+    config.LM_DICTIONARY_PATH.write_text(text)
+    sidecar = config.LM_DICTIONARY_PATH.with_suffix(config.LM_DICTIONARY_PATH.suffix + ".provenance.json")
+    sidecar.write_text(json.dumps({
+        "source_urls": [config.LM_DICTIONARY_LANDING_PAGE, download_url],
+        "scrape_timestamp": _dt.datetime.now(_dt.timezone.utc).isoformat(),
+        "parser": "src.common.text.fetch_lm_dictionary",
+        "row_count": max(len(text.splitlines()) - 1, 0),
+        "notes": "Loughran-McDonald Master Dictionary, free for academic/research use per sraf.nd.edu. "
+                 "Google Drive share resolved to a direct CSV via the uc?export=download redirect.",
+        "written_at": _dt.datetime.now(_dt.timezone.utc).isoformat(),
+    }, indent=2))
+    logger.info("wrote LM dictionary (%d words) to %s", max(len(text.splitlines()) - 1, 0), config.LM_DICTIONARY_PATH)
+    return config.LM_DICTIONARY_PATH
+
+
 @dataclass
 class LMScore:
     n_tokens: int
@@ -137,6 +197,29 @@ def score_lm(text: str, lexicon: LMLexicon) -> LMScore:
     n_unc = sum(counts[w] for w in lexicon.uncertainty if w in counts)
     n_lit = sum(counts[w] for w in lexicon.litigious if w in counts)
     return LMScore(n_tokens=n, n_positive=n_pos, n_negative=n_neg, n_uncertainty=n_unc, n_litigious=n_lit)
+
+
+# ---------------------------------------------------------------------------
+# Vulnerability lexicon (config.VULNERABILITY_STEMS) — regulator alarm lives
+# in these words, not in general-purpose (VADER) social-media valence.
+# Stem-based substring matching, not exact-token matching like LM, since the
+# lexicon is deliberately specified as word stems (e.g. "vulnerab" matches
+# vulnerable/vulnerability/vulnerabilities).
+# ---------------------------------------------------------------------------
+def score_vulnerability(text: str, stems: list[str] | None = None) -> float:
+    """Vulnerability-lexicon hit rate per token (stem substring match)."""
+    stems = stems or config.VULNERABILITY_STEMS
+    tokens = tokenize(text)
+    n = len(tokens)
+    if not n:
+        return 0.0
+    hits = sum(1 for tok in tokens if any(tok.startswith(stem) for stem in stems))
+    # Multi-word stems (e.g. "fire sale", "run risk") aren't single tokens;
+    # count phrase occurrences in the lowered text separately.
+    phrase_stems = [s for s in stems if " " in s]
+    lowered = text.lower()
+    phrase_hits = sum(lowered.count(p) for p in phrase_stems)
+    return (hits + phrase_hits) / n
 
 
 # ---------------------------------------------------------------------------
@@ -185,11 +268,17 @@ _DEFAULT_STOPWORDS = set(
 
 
 def main():
+    import sys
     logging.basicConfig(level=logging.INFO)
+    if "--fetch-lexicon" in sys.argv:
+        from src.common.http import CachedSession
+        fetch_lm_dictionary(CachedSession())
+        return
     sample = "The CLO market showed resilient performance despite uncertainty about litigation risk in the loan collateral."
     print(split_sentences(sample))
     print(mention_rate_per_1000(sample, ["CLO", "litigation risk"]))
     print(collocates(sample, "CLO", window=4))
+    print("vulnerability rate:", score_vulnerability("The fire sale risk amplified contagion across correlated portfolios."))
 
 
 if __name__ == "__main__":

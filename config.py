@@ -54,6 +54,12 @@ RATE_LIMITS: dict[str, tuple[float, int]] = {
     "fred.stlouisfed.org": (2.0, 4),
     "query1.finance.yahoo.com": (2.0, 4),
     "query2.finance.yahoo.com": (2.0, 4),
+    # GDELT's own published policy is "one request every 5 seconds"; run
+    # noticeably slower than that ceiling since this project's sandboxed
+    # egress appears to share a quota with other traffic (empirically 429s
+    # even at 8-10s spacing during development, 2026-07-11).
+    "api.gdeltproject.org": (0.05, 1),
+    "news.google.com": (1.0, 2),
 }
 MAX_RETRIES = 5
 BACKOFF_BASE_SECONDS = 1.5
@@ -177,6 +183,16 @@ FED_CLO_HOLDER_CITATION = {
 CLO_CEF_TICKERS = ["ECC", "OXLC", "XFLT", "OCCI", "CCIF", "SPMC"]
 # Resolved once from SEC's ticker->CIK map (www.sec.gov/files/company_tickers.json)
 # and hardcoded since CIKs don't change; scrape_filings.py re-verifies at runtime.
+# Listed preferred/baby-bond tickers per fund (its observable marginal cost
+# of capital) — verified individually resolvable via yfinance 2026-07-11;
+# tickers guessed from each issuer's normal <BASE><SERIES LETTER> convention
+# and kept only if real price data came back (ECCD/ECCF/ECCX/ECCW guessed
+# but returned no data — dropped, not fabricated).
+CLO_CEF_PREFERRED_TICKERS = {
+    "OXLC": ["OXLCZ", "OXLCL", "OXLCI", "OXLCO", "OXLCP", "OXLCN", "OXLCM"],
+    "ECC": ["ECCC", "ECCV"],
+}
+
 CLO_CEF_CIKS = {
     "ECC": "1604174",
     "OXLC": "1495222",
@@ -224,6 +240,25 @@ ADV_BULK_SNAPSHOTS = {
 # Section 5 — Rating agencies / presales
 # ---------------------------------------------------------------------------
 RATING_AGENCIES = ["S&P", "Fitch"]
+
+# ---------------------------------------------------------------------------
+# Section 6 v2 — Sentiment corpora, high-frequency attention/tone backbone
+# ---------------------------------------------------------------------------
+# Kept deliberately short given api.gdeltproject.org's strict rate limiting
+# (see RATE_LIMITS) — each query costs two slow requests (volume + tone).
+GDELT_QUERIES = [
+    "collateralized loan obligation",
+    "CLO market",
+    "leveraged loan",
+    "CLO ETF",
+    "Oxford Lane",
+]
+GDELT_TIMESPAN = "15years"
+
+NEWS_RSS_QUERIES = [
+    "collateralized loan obligation", "CLO ETF", "CLO market", "leveraged loan fund", "Oxford Lane Capital",
+]
+YF_NEWS_TICKERS = ["JAAA", "CLOZ", "ECC", "OXLC", "XFLT", "OCCI", "BKLN"]
 
 # ---------------------------------------------------------------------------
 # Section 6 — Sentiment corpora
@@ -361,3 +396,16 @@ LEGAL_SUFFIXES = [
 # recorded in docs/sources.md on first successful fetch.
 LM_DICTIONARY_LANDING_PAGE = "https://sraf.nd.edu/loughranmcdonald-master-dictionary/"
 LM_DICTIONARY_PATH = DATA_DIR / "_lexicons" / "lm_master_dictionary.csv"
+
+# Custom vulnerability lexicon (Section 6 alarm index v2): regulator alarm
+# about CLOs lives in this vocabulary, not in LM's general finance polarity
+# or VADER's social-media valence, neither of which fires reliably on
+# professionally neutral prose. Single-token entries are stem-matched
+# (substring prefix); multi-word entries are matched as literal phrases.
+# Hand-curated, not derived from a corpus — documented here rather than
+# buried in a scoring module so it's auditable/editable in one place.
+VULNERABILITY_STEMS = [
+    "vulnerab", "opacity", "opaque", "amplif", "fire sale", "run risk",
+    "spillover", "contagion", "deteriorat", "cascade", "correlated",
+    "leverage loop", "maturity mismatch", "forced sell",
+]
