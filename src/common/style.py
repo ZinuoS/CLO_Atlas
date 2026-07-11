@@ -4,12 +4,14 @@ plus an Altair theme for the interactive HTML counterparts.
 
 House rules (do not deviate per-chart):
   - White background (#FFFFFF), horizontal-only gridlines, no top/right spines.
+  - Arial (falls back to Helvetica/DejaVu Sans if Arial isn't installed) —
+    chosen to match the presentation deck's own font, not the newsroom serif.
   - Direct labeling at line ends instead of a legend box whenever series <= 6.
   - One accent color against a warm-gray categorical ramp; color means something
     (the thing the chart is about) or it isn't used at all.
   - Headline is a full declarative sentence in bold; subtitle carries the
     technical description; source line bottom-left in small caps; byline+date
-    bottom-right.
+    bottom-right ("Credit: Ashley Shi").
   - Categorical hues are assigned in a FIXED order (never cycled/regenerated per
     filter) so an entity keeps its color across every chart it appears in.
 """
@@ -38,20 +40,20 @@ WARM_GRAY = ["#4A4540", "#8C8579", "#B8B0A4", "#D8D2C6"]  # fixed categorical or
 DIVERGING = ("#2A6F97", "#D0021B")  # cool pole, warm pole; neutral midpoint = WARM_GRAY[2]
 EVENT_SPAN = "#C7C0B4"
 
-BYLINE = f"{config.CONTACT_NAME}"
+BYLINE = "Credit: Ashley Shi"
 
-_FONT_CANDIDATES = ["Georgia", "Charter", "Times New Roman", "DejaVu Serif"]
+_FONT_CANDIDATES = ["Arial", "Helvetica", "Helvetica Neue", "DejaVu Sans"]
 
 
 def apply_theme() -> None:
     """Call once at the top of any script/notebook before plotting."""
     available = {f.name for f in mpl.font_manager.fontManager.ttflist}
-    serif = next((f for f in _FONT_CANDIDATES if f in available), "DejaVu Serif")
+    body_font = next((f for f in _FONT_CANDIDATES if f in available), "DejaVu Sans")
     mpl.rcParams.update({
         "figure.facecolor": BG,
         "axes.facecolor": BG,
         "savefig.facecolor": BG,
-        "font.family": serif,
+        "font.family": body_font,
         "text.color": INK,
         "axes.edgecolor": INK_MUTED,
         "axes.labelcolor": INK_MUTED,
@@ -180,6 +182,7 @@ def altair_theme() -> dict:
     return {
         "config": {
             "background": BG,
+            "font": "Arial, Helvetica, sans-serif",
             "view": {"stroke": "transparent"},
             "axis": {
                 "domain": False,
@@ -190,11 +193,14 @@ def altair_theme() -> dict:
                 "titleColor": INK_MUTED,
                 "labelFontSize": 10,
                 "titleFontSize": 10,
+                "labelFont": "Arial, Helvetica, sans-serif",
+                "titleFont": "Arial, Helvetica, sans-serif",
             },
             "axisX": {"grid": False},
             "axisY": {"grid": True},
-            "legend": {"labelColor": INK_MUTED, "titleColor": INK_MUTED, "labelFontSize": 10},
-            "title": {"color": INK, "fontSize": 14, "fontWeight": "bold", "anchor": "start"},
+            "legend": {"labelColor": INK_MUTED, "titleColor": INK_MUTED, "labelFontSize": 10,
+                       "labelFont": "Arial, Helvetica, sans-serif", "titleFont": "Arial, Helvetica, sans-serif"},
+            "title": {"color": INK, "fontSize": 14, "fontWeight": "bold", "anchor": "start", "font": "Arial, Helvetica, sans-serif"},
             "range": {"category": [ACCENT] + WARM_GRAY, "diverging": [DIVERGING[0], WARM_GRAY[2], DIVERGING[1]]},
             "line": {"strokeWidth": 2.2},
         }

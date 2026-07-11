@@ -97,7 +97,7 @@ def viz_one_loan_several_prices_interactive(top_n: int = 15):
     fig.update_layout(
         title="The same company's debt gets marked at wildly different prices by different holders",
         xaxis_title="Mark (par = 100)", yaxis=dict(categoryorder="array", categoryarray=list(reversed(order))),
-        plot_bgcolor="#FAF9F6", paper_bgcolor="#FAF9F6", font=dict(family="Georgia, serif"),
+        plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF", font=dict(family="Arial, Helvetica, sans-serif"),
         margin=dict(l=220), height=650,
     )
     out_path = config.FIGURES_INTERACTIVE_DIR / "one_loan_several_prices.html"
