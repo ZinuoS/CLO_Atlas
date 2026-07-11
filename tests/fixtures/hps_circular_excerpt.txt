@@ -1,0 +1,97 @@
+Reinvestment Period: The "Reinvestment Period" will be the period from and including
+the Closing Date to and including the earliest of (i) the Payment
+Date in April 2030, (ii) any date on which the Maturity of any Class
+of Rated Debt is accelerated following an Event of Default pursuant
+to the Indenture and (iii) any date on which the Investment Manager
+reasonably determines that it can no longer reinvest in additional
+Collateral Obligations in accordance with the Indenture or the
+Investment Management Agreement; provided that, in the case of
+this clause (iii), the Investment Manager notifies the Issuer and the
+Collateral Trustee (who shall notify the Holders of Notes, the
+Collateral Administrator and the Rating Agencies) thereof at least
+five Business Days prior to such date.
+Optional Redemption:
+Non-Call Period During the period from the Closing Date to but excluding April 23,
+2027 (such period, the "Non-Call Period"), the Debt is not subject
+to Optional Redemption but is subject to Special Redemption and
+Tax Redemption. See Section 9.2 of the Indenture.
+Redemption After Non-Call Period On any Business Day after the Non-Call Period, at the written
+direction of (i) a Majority of the Subordinated Notes (with the prior
+written consent of the Investment Manager) or the Investment
+Manager (with the prior written consent of a Majority of the
+Subordinated Notes), all Classes of Rated Debt will be redeemed by
+the Applicable Issuers (in whole but not in part) from Refinancing
+Proceeds or Sale Proceeds; provided that no such redemption may
+occur without the prior written consent of the Investment Manager
+if any portion of such redemption will be from Refinancing
+Proceeds; or (ii) a Majority of the Subordinated Notes (with the prior
+written consent of the Investment Manager) or the Investment
+Manager (with the prior written consent of a Majori
+...
+riority of Payments." The "Coverage Tests" will consist of the
+Overcollateralization Ratio Test and the Interest Coverage Test,
+each as applied to each specified Class or Classes of Debt.
+The "Overcollateralization Ratio Test" and "Interest Coverage
+Test" applicable to a designated Class or Classes of the Debt will be
+satisfied as of any date of determination on which such Coverage
+Test is applicable, if (1) the applicable Overcollateralization Ratio
+or Interest Coverage Ratio, as the case may be, is at least equal to
+the applicable ratio indicated below or (2) such Class or Classes of
+the Debt is no longer Outstanding. There is no interest coverage test
+in respect of the Class E-R Notes.
+Class Required Interest Coverage Ratio (%)
+A/B 115.00%
+C 110.00%
+D 105.00%
+Class Required Overcollateralization Ratio (%)
+A/B 121.58%
+C 113.95%
+D 106.68%
+E 103.20%
+Measurement of the degree of compliance with the
+Overcollateralization Ratio Tests will be required as of any date
+after the Closing Date on which such tests are required to be
+33
+determined under the Indenture. Measurement of the degree of
+compliance with the Interest Coverage Tests will be required as of
+any date after the Closing Date on which such tests are required to
+be determined under the Indenture. If the Coverage Tests are not
+satisfied on any such date, the Issuer will be required to apply
+available amounts in the Payment Account on the related Payment
+Date to the repayment of principal of the Debt in accordance with
+the Priority of Payments to the extent necessary to achieve
+compliance with such Coverage Tests.
+Interest Diversion Test: The "Interest Diversion Test" is a test that will be satisfied on any
+Measurement Date during the Reinvestment Period on which Class
+E-R Notes remain outstanding if the Overcollateralization Ratio
+with respect to the Class E-R Notes as of such Measurement Date is
+at least equal to 103.70%.
+During the Reinvestment Period, if the Interest Diversion Test is not
+satisfied on a Determination Date, the lesser of (i) 50% of the
+Interest Proceeds remaining on the related Payment Date after
+application of Interest Proceeds under clauses (A) through (Q) of the
+Priority of Interest Proceeds and (ii) the amount necessary to cause
+the Interest Diversion Test to be satisfied as of such Determination
+Date will be deposited into the Collection Account as Principal
+Proceeds and used during the Reinvestment Period to purchase
+additional Collateral Obligations.
+Issuer Accounts: In connection with the Original Closing Date, the Collateral Trustee
+established certain segregated accounts in the name of the Issuer
+subject to the lien of the Collateral Trustee for the benefit of the
+Secured Parties. Provisions relating to the accounts are set forth in
+Article X of the Indenture.
+Other Information:
+Listing, Trading and Form of Notes .............. Application has been made to Euronext Dublin for the Rated Notes
+to be admitted to the Official List and to trading on the Global
+Exchang
+...
+Out Loans, Unsecured Loans or Permitted Non-Loan Assets issued by
+a single obligor and its Affiliates;
+Rating of "Caa1" or
+"CCC+" and below ............................ (iv) (1) not more than 7.5% of the Collateral Principal Amount may
+consist of Collateral Obligations with a Moody's Rating of "Caa1" or
+below and (2) not more than 7.5% of the Collateral Principal Amount
+may consist of Collateral Obligations with an S&P Rating of "CCC+"
+or below;
+Interest Paid Less Frequently
+Than Quarterly .....

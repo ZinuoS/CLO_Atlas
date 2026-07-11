@@ -11,6 +11,9 @@ data/interim/
 data/final/
 figures/*.png
 figures/*.svg
+figures/anatomy/*.png
+figures/anatomy/*.svg
+figures/anatomy/*.gif
 figures/interactive/*.html
 !figures/final/.gitkeep
 

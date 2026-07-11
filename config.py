@@ -27,12 +27,13 @@ FINAL_DIR = DATA_DIR / "final"
 FIGURES_DIR = ROOT / "figures"
 FIGURES_INTERACTIVE_DIR = FIGURES_DIR / "interactive"
 FIGURES_FINAL_DIR = FIGURES_DIR / "final"
+FIGURES_ANATOMY_DIR = FIGURES_DIR / "anatomy"  # waterfall frame sequences (high file count, kept out of the flat figures/ dir)
 DOCS_DIR = ROOT / "docs"
 CACHE_MANIFEST = RAW_DIR / "_manifest.csv"
 LLM_CACHE_DIR = DATA_DIR / "_llm_cache"
 
 for d in (RAW_DIR, INTERIM_DIR, FINAL_DIR, FIGURES_DIR, FIGURES_INTERACTIVE_DIR,
-          FIGURES_FINAL_DIR, DOCS_DIR, LLM_CACHE_DIR):
+          FIGURES_FINAL_DIR, FIGURES_ANATOMY_DIR, DOCS_DIR, LLM_CACHE_DIR):
     d.mkdir(parents=True, exist_ok=True)
 
 # ---------------------------------------------------------------------------
@@ -409,3 +410,92 @@ VULNERABILITY_STEMS = [
     "spillover", "contagion", "deteriorat", "cascade", "correlated",
     "leverage loop", "maturity mismatch", "forced sell",
 ]
+
+# ---------------------------------------------------------------------------
+# src/anatomy/ — CLO anatomy from the arranger's seat (model-driven section).
+#
+# HARD RULE: zero firm data. Every structural parameter below is adapted
+# from ONE real, public offering circular — HPS Loan Management 2023-17,
+# Ltd. / HPS Loan Management 2023-17 LLC, Final Offering Circular (a
+# refinancing), dated 2025-06-06, listed on the Global Exchange Market of
+# Euronext Dublin (see src/anatomy/scrape_circular.py for how this was
+# found and fetched). Every figure below is either (a) taken directly from
+# that circular's own tables/text — tagged "circular" — or (b) a market-
+# standard convention this project is choosing because the circular didn't
+# state it or because the model simplifies it away — tagged "TO-VERIFY".
+#
+# Two real tranches (Class A-R Notes $52mm + Class A-L-R Loans $200mm) are
+# collapsed into one stylized "AAA" class ($252mm total, both pay the same
+# spread and rank pari passu in the real deal); Class D-1-R and D-2-R are
+# collapsed into one "BBB" class at their par-weighted blended spread; the
+# Class Z Notes (a $39.7mm notional retention/IRR-tracking overlay with no
+# independent economic claim on collateral) are dropped entirely — all
+# three simplifications are restated on every figure's notes line, not just
+# here.
+# ---------------------------------------------------------------------------
+ANATOMY_CIRCULAR_CITATION = {
+    "deal_name": "HPS Loan Management 2023-17, Ltd. / HPS Loan Management 2023-17 LLC",
+    "document": "Final Offering Circular (Refinancing)",
+    "document_date": "2025-06-06",
+    "manager": "HPS Investment Partners CLO (UK) LLP",
+    "listing": "Global Exchange Market, Euronext Dublin",
+    "source_url": "https://ise-prodnr-eu-west-1-data-integration.s3-eu-west-1.amazonaws.com/202506/168fabf3-c71c-42f7-9556-fcd803d3f379.pdf",
+    "accessed": "2026-07-11",
+}
+
+ANATOMY_DEAL = {
+    # Dates: closing re-anchored to quarter 0; every other date is the
+    # circular's own real gap from closing, in whole quarters (all landed
+    # on exact quarter boundaries — not rounded). Absolute calendar dates
+    # are illustrative (this refi circular doesn't state the *original*
+    # 2023 deal's warehouse/pricing dates); the RELATIVE structure
+    # (non-call length, reinvestment length, tenor) is the circular's real
+    # figures. [circular: non-call end, reinvestment end, stated maturity;
+    # TO-VERIFY: warehouse open, pricing date, effective date]
+    "dates": {
+        "warehouse_open_quarter": -3, "pricing_quarter": -1, "closing_quarter": 0,
+        "effective_date_quarter": 0, "non_call_end_quarter": 8, "reinvestment_end_quarter": 20,
+        "stated_maturity_quarter": 52,
+        "closing_date_calendar": "2025-04-08", "non_call_end_calendar": "2027-04-23",
+        "reinvestment_end_calendar": "2030-04-30", "stated_maturity_calendar": "2038-04-30",
+    },
+    # Liabilities: sizes and spreads are the circular's own figures (with
+    # the two collapses noted above); ratings are the circular's expected
+    # ratings for the closest real class. [circular]
+    "tranches": [
+        {"name": "AAA", "size": 252_000_000, "spread_bps": 127, "rating": "Aaa/AAA", "pikable": False},
+        {"name": "AA", "size": 52_000_000, "spread_bps": 165, "rating": "AA", "pikable": False},
+        {"name": "A", "size": 24_000_000, "spread_bps": 180, "rating": "A", "pikable": True},
+        {"name": "BBB", "size": 27_000_000, "spread_bps": 292, "rating": "BBB-", "pikable": True},  # par-weighted D-1/D-2 blend
+        {"name": "BB", "size": 13_000_000, "spread_bps": 550, "rating": "BB-", "pikable": True},
+        {"name": "equity", "size": 39_700_000, "spread_bps": None, "rating": None, "pikable": False},
+    ],
+    "target_par": 407_700_000,  # sum of tranches above; collateral principal ~= rated debt + equity [TO-VERIFY: standard simplifying assumption, ignores modest structuring arbitrage]
+    # Coverage tests: trigger levels are the circular's own table.
+    # [circular]
+    "oc_triggers_pct": {"AAA": 121.58, "AA": 121.58, "A": 113.95, "BBB": 106.68, "BB": 103.20},
+    "ic_triggers_pct": {"AAA": 115.00, "AA": 115.00, "A": 110.00, "BBB": 105.00},  # no IC test on BB, per circular
+    "interest_diversion_trigger_pct": 103.70,  # tied to the BB (Class E-R) OC ratio, reinvestment-period only [circular]
+    "ccc_limit_pct": 7.5,  # of collateral principal amount, both Moody's/S&P buckets [circular]
+    "ccc_haircut_to_market_value": True,  # excess-CCC (above the limit) carried at min(market value, par) rather than par [TO-VERIFY: standard mechanic, circular describes the test but this project's engine applies the conventional haircut treatment]
+    # Fees: incentive-fee rate is the circular's own figure; hurdle and
+    # management-fee percentages are not stated in the sections this
+    # project extracted (see scrape_circular.py) — market-standard
+    # convention used instead. [TO-VERIFY]
+    "senior_mgmt_fee_pct": 0.15, "sub_mgmt_fee_pct": 0.20,  # % p.a. of collateral principal [TO-VERIFY: convention]
+    "incentive_fee_pct": 20.0,  # of residual after equity hurdle [circular]
+    "incentive_hurdle_irr_pct": 12.0,  # [TO-VERIFY: convention, not stated in extracted sections]
+    "senior_expense_cap_usd_annual": 250_000,  # [TO-VERIFY: convention]
+    # Portfolio / collateral assumptions — explicitly NOT from the circular
+    # (a live BSL portfolio's actual WAS/WARF/diversity are reported
+    # figures at a point in time, not structural terms); market-standard
+    # pricing-convention values, as the brief instructs. [TO-VERIFY]
+    "was_bps_over_sofr": 350, "warf": 2900, "diversity_score": 65,
+    "recovery_rate_pct": 67.5, "base_cdr_pct": 2.0, "base_cpr_pct": 20.0,
+    "sofr_base_pct": 4.30,  # illustrative flat base case; scenarios override
+}
+
+# The click-through PNG frame sequences are the deliverable; GIF assembly is
+# a convenience for reviewing them and must never drive a design decision
+# (fixed frame count/spacing, layout) — off by default.
+ANATOMY_BUILD_GIFS = False
