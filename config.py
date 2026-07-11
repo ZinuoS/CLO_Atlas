@@ -273,6 +273,73 @@ EVENTS = [
 ]
 
 # ---------------------------------------------------------------------------
+# Macro opener (slides 1-2) — regime, disintermediation, scale, income
+# ---------------------------------------------------------------------------
+# Policy & curve, credit spreads, bank credit conditions (SLOOS), lending
+# stock, inflation/real economy, recession shading. All 18 IDs verified live
+# against fredgraph.csv (HTTP 200) 2026-07-11 before being added here.
+MACRO_FRED_SERIES = {
+    # Policy & curve
+    "FEDFUNDS": "FEDFUNDS", "SOFR": "SOFR", "UST_3M": "DGS3MO", "UST_2Y": "DGS2",
+    "UST_10Y": "DGS10", "T10Y2Y": "T10Y2Y",
+    # Credit spreads
+    "IG_OAS": "BAMLC0A0CM", "AAA_OAS": "BAMLC0A1CAAA", "BBB_OAS": "BAMLC0A4CBBB",
+    "HY_OAS": "BAMLH0A0HYM2", "CCC_OAS": "BAMLH0A3HYC",
+    # Bank credit conditions (Senior Loan Officer Opinion Survey)
+    "SLOOS_TIGHTENING_LARGE": "DRTSCILM", "SLOOS_TIGHTENING_SMALL": "DRTSCIS",
+    "SLOOS_SPREAD_OVER_COF": "DRSDCILM",
+    # Lending stock
+    "BUSLOANS": "BUSLOANS", "TOTCI": "TOTCI",
+    # Inflation & real economy (regime shading)
+    "CPI": "CPIAUCSL", "UNRATE": "UNRATE",
+    # Recession indicator (shading)
+    "USREC": "USREC",
+}
+
+# Rate-regime segmentation thresholds applied to FEDFUNDS (config, not fitted —
+# this is exposition, not a statistical regime-switching model). ZIRP = level
+# at/below the threshold; hiking/easing = 12m change beyond the ROC threshold
+# while off zero; plateau = everything else (flat, off-zero).
+MACRO_ZIRP_THRESHOLD_PCT = 0.25
+MACRO_REGIME_ROC_THRESHOLD_PCT = 1.0  # 12-month change in FEDFUNDS, percentage points
+
+# Illustrative SOFR + spread floater coupons for the mechanics table (labeled
+# "illustrative" wherever plotted — not any specific real CLO tranche's terms).
+MACRO_ILLUSTRATIVE_FLOATER_SPREADS_BPS = {"illustrative AAA-like": 150, "illustrative BBB-like": 300, "illustrative single-B-like": 500}
+
+# Z.1 Financial Accounts of the United States, mirrored through FRED rather
+# than the raw Data Download Program CSV packages: Choose.aspx?rel=Z1 serves
+# only opaque hash-keyed "preformatted package" values with no server-rendered
+# mnemonic-to-hash mapping discoverable without an undocumented extra lookup
+# step, whereas FRED publishes the identical Board-published Z.1 figures under
+# stable BOGZ1<mnemonic> IDs. Verified live 2026-07-11; underlying Z.1 series
+# codes noted alongside each FRED ID in docs/sources.md.
+MACRO_Z1_SERIES = {
+    "nonfin_corp_total_credit_market_debt": "BCNSDODNS",  # debt securities + loans, liability, level
+    "nonfin_corp_debt_securities": "NCBDBIQ027S",          # debt securities only, liability, level
+    "nonfin_corp_bank_loans": "BLNECLBSNNCB",              # depository-institution loans n.e.c., liability, level
+}
+
+# Market-size comparators, all FRED-mirrored Fed/Treasury data, verified live
+# 2026-07-11. CLO outstanding has no dedicated Z.1/FRED series (config's
+# FED_CLO_HOLDER_CITATION already documents why); the scale comparison reuses
+# that Section 4 citation instead of re-deriving a number here.
+MACRO_MARKET_SIZE_FRED = {
+    "corporate_and_foreign_bonds": "ASCFBL",           # all sectors, liability, level
+    "treasury_total_public_debt": "GFDEBTN",           # federal debt, total public debt
+    "municipal_securities": "SLGMSOQ027S",             # state & local govt, liability, level
+    "agency_mbs_pools": "AGSEBMPTCMAHDFS",             # agency/GSE-backed mortgage pools, total mortgages, asset level
+}
+
+# ---------------------------------------------------------------------------
+# Slide export dimensions (16:9 @ 300dpi) — used only if a figure is meant to
+# drop into a deck without rescaling; most macro exhibits are standalone
+# panel-sized charts sized like every other section's figures.
+# ---------------------------------------------------------------------------
+SLIDE_W_IN = 13.333
+SLIDE_H_IN = 7.5
+
+# ---------------------------------------------------------------------------
 # Entity resolution thresholds (common/entity.py)
 # ---------------------------------------------------------------------------
 ENTITY_AUTO_ACCEPT_SCORE = 92

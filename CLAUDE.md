@@ -48,18 +48,19 @@ NYT-style data-journalism charts introducing CLOs as an asset class.
   unmatched) -> optional cached LLM tiebreaker. First-token blocking.
 - `text.py` — PDF/HTML -> text, sentence/paragraph split, Loughran-McDonald
   sentiment scoring, mention rates, collocations.
-- `style.py` — `apply_theme()` / `save_figure()`: off-white bg, horizontal
+- `style.py` — `apply_theme()` / `save_figure()`: white bg, horizontal
   gridlines only, no boxed spines, direct labeling over legends (<=6 series),
   one accent color, headline/subtitle/source/byline scaffold, event-flag
   helper keyed to `config.EVENTS`, small-multiples grid, matching Altair theme.
 
 ## Execution order
 
-Scaffold -> Section 1 (ETF) -> Section 4 (official) -> Section 2 (CEF) ->
-Section 5 (ratings) -> Section 3 (EDGAR/BDC, hardest parsing) -> Section 6
-(sentiment) -> `notebooks/7_synthesis.ipynb`. At each section boundary: run
-that section's notebook top-to-bottom from cache, commit, update
-`docs/sources.md`.
+Scaffold -> Macro opener (slides 1-2: regime, disintermediation, scale,
+income — `notebooks/0_macro_opener.ipynb`) -> Section 1 (ETF) -> Section 4
+(official) -> Section 2 (CEF) -> Section 5 (ratings) -> Section 3 (EDGAR/BDC,
+hardest parsing) -> Section 6 (sentiment) -> `notebooks/7_synthesis.ipynb`. At
+each section boundary: run that section's notebook top-to-bottom from cache,
+commit, update `docs/sources.md`.
 
 ## Testing
 

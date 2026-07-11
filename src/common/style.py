@@ -3,7 +3,7 @@ headline/subtitle/source/annotation scaffold every figure in this project uses,
 plus an Altair theme for the interactive HTML counterparts.
 
 House rules (do not deviate per-chart):
-  - Off-white background (#FAF9F6), horizontal-only gridlines, no top/right spines.
+  - White background (#FFFFFF), horizontal-only gridlines, no top/right spines.
   - Direct labeling at line ends instead of a legend box whenever series <= 6.
   - One accent color against a warm-gray categorical ramp; color means something
     (the thing the chart is about) or it isn't used at all.
@@ -28,7 +28,7 @@ import config
 # Palette — one accent, a warm-gray categorical ramp (fixed order, never cycled),
 # a two-hue diverging pair for polarity charts, off-white surface.
 # ---------------------------------------------------------------------------
-BG = "#FAF9F6"
+BG = "#FFFFFF"
 INK = "#1A1A1A"
 INK_MUTED = "#5C5652"
 GRID = "#DAD5CE"

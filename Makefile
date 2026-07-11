@@ -1,8 +1,8 @@
-.PHONY: all setup test etf cef edgar official ratings sentiment figures synthesis clean
+.PHONY: all setup test macro etf cef edgar official ratings sentiment figures synthesis clean
 
 PYTHON := .venv/bin/python
 
-all: etf official cef ratings edgar sentiment synthesis
+all: macro etf official cef ratings edgar sentiment synthesis
 
 setup:
 	python3 -m venv .venv
@@ -11,6 +11,24 @@ setup:
 
 test:
 	$(PYTHON) -m pytest tests/ -q
+
+# --- Macro opener: slides 1-2 (regime, disintermediation, scale, income) ---
+macro:
+	$(PYTHON) -m src.macro.scrape_fred
+	$(PYTHON) -m src.macro.scrape_z1
+	$(PYTHON) -m src.macro.scrape_market_size
+	$(PYTHON) -m src.macro.scrape_returns
+	$(PYTHON) -m src.macro.analysis_regime
+	$(PYTHON) -m src.macro.analysis_disintermediation
+	$(PYTHON) -m src.macro.analysis_scale
+	$(PYTHON) -m src.macro.analysis_tightening
+	$(PYTHON) -m src.macro.analysis_income
+	$(PYTHON) -m src.macro.viz_regime
+	$(PYTHON) -m src.macro.viz_disintermediation
+	$(PYTHON) -m src.macro.viz_scale
+	$(PYTHON) -m src.macro.viz_tightening
+	$(PYTHON) -m src.macro.viz_income
+	$(PYTHON) -m src.macro.ledger
 
 # --- Section 1: CLO ETFs ---------------------------------------------------
 etf:
@@ -97,6 +115,7 @@ sentiment:
 
 # --- Regenerate every chart from cache (no network) -------------------------
 figures:
+	$(PYTHON) -m jupyter nbconvert --to notebook --execute --inplace notebooks/0_macro_opener.ipynb
 	$(PYTHON) -m jupyter nbconvert --to notebook --execute --inplace notebooks/1_etf.ipynb
 	$(PYTHON) -m jupyter nbconvert --to notebook --execute --inplace notebooks/2_cef.ipynb
 	$(PYTHON) -m jupyter nbconvert --to notebook --execute --inplace notebooks/3_edgar.ipynb
