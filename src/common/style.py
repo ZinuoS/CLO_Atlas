@@ -151,6 +151,7 @@ def save_figure(fig, name: str, headline: str, subtitle: str = "", source: str =
     headline_block_in = 0.22 * headline_lines + 0.08
     subtitle_block_in = 0.28 * subtitle_lines
     header_in = 0.22 + headline_block_in + subtitle_block_in
+
     # Leaves room below the plot area for axis tick labels + an axis title
     # (most charts have one) before the source/byline band starts.
     footer_in = 0.85 if notes else 0.7
@@ -161,10 +162,32 @@ def save_figure(fig, name: str, headline: str, subtitle: str = "", source: str =
     fig.text(0.02, 1 - (0.22 / fig_h), headline, fontsize=15, fontweight="bold", color=INK, ha="left", va="top", wrap=True)
     if subtitle:
         fig.text(0.02, 1 - ((0.22 + headline_block_in) / fig_h), subtitle, fontsize=10.5, color=INK_MUTED, ha="left", va="top", wrap=True)
-    if source:
-        fig.text(0.02, 0.16 / fig_h, f"SOURCE: {source.upper()}", fontsize=7.5, color=INK_MUTED, ha="left", va="bottom")
+
+    # SOURCE (bottom-left) and byline (bottom-right) normally share one row.
+    # A char-count heuristic for whether they'd overlap is fragile (uppercase
+    # glyphs run wider than a flat average), so measure the actual rendered
+    # text extents after a draw pass and reposition for real if they collide,
+    # rather than guessing.
+    source_text = f"SOURCE: {source.upper()}" if source else ""
     dateline = _dt.date.today().isoformat()
-    fig.text(0.98, 0.16 / fig_h, f"{BYLINE} · {dateline}", fontsize=7.5, color=INK_MUTED, ha="right", va="bottom")
+    byline_text = f"{BYLINE} · {dateline}"
+    source_y_in = 0.16
+    source_artist = None
+    if source:
+        source_artist = fig.text(0.02, source_y_in / fig_h, source_text, fontsize=7.5, color=INK_MUTED, ha="left", va="bottom")
+    byline_artist = fig.text(0.98, source_y_in / fig_h, byline_text, fontsize=7.5, color=INK_MUTED, ha="right", va="bottom")
+
+    if source_artist is not None:
+        fig.canvas.draw()
+        renderer = fig.canvas.get_renderer()
+        src_bbox = source_artist.get_window_extent(renderer)
+        byl_bbox = byline_artist.get_window_extent(renderer)
+        gap_px = byl_bbox.x0 - src_bbox.x1
+        if gap_px < 10:  # too close / overlapping — stack byline above source
+            byline_artist.set_position((0.98, (source_y_in + 0.16) / fig_h))
+            footer_in += 0.16
+            fig.subplots_adjust(bottom=footer_in / fig_h)
+
     if notes:
         fig.text(0.02, 0.30 / fig_h, notes, fontsize=7, color=INK_MUTED, ha="left", va="bottom", style="italic")
 
