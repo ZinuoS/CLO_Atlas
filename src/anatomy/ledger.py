@@ -42,9 +42,11 @@ def build_ledger() -> pd.DataFrame:
                       f"{citation} offering circular", deal.citation.get("accessed"), "VERIFIED"))
     rows.append(_row(f"CCC limit: {deal.ccc_limit_pct}% of collateral principal",
                       f"{citation} offering circular", deal.citation.get("accessed"), "VERIFIED"))
-    rows.append(_row(f"Tranche sizes/spreads/ratings: {[(t.name, t.size, t.spread_bps, t.rating) for t in deal.tranches]}",
-                      f"{citation} offering circular, capital structure table (AAA and BBB collapse two real sub-classes each; "
-                      "see config.ANATOMY_DEAL docstring)", deal.citation.get("accessed"), "VERIFIED"))
+    rows.append(_row(f"Tranche sizes/2025 REFI spreads/ratings: {[(t.name, t.size, t.spread_bps, t.rating) for t in deal.tranches]}",
+                      f"{citation} offering circular (a 2025 refinancing; spreads are refi pricing, NOT the deal's original 2023 "
+                      "new-issue spread -- that figure was searched for and could not be independently verified, see "
+                      "config.ANATOMY_DEAL). AAA and BBB collapse two real sub-classes each; see config.ANATOMY_DEAL docstring",
+                      deal.citation.get("accessed"), "VERIFIED"))
     rows.append(_row(f"Incentive fee: {deal.incentive_fee_pct}% over hurdle",
                       f"{citation} offering circular", deal.citation.get("accessed"), "VERIFIED"))
 
