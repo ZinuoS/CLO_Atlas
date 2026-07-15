@@ -443,6 +443,24 @@ ANATOMY_CIRCULAR_CITATION = {
     "accessed": "2026-07-11",
 }
 
+# Real, VERIFIED pre-closing history found directly in the refinancing
+# circular's "General" section on the Issuer (not previously extracted by
+# scrape_circular.py's regex patterns, found on a manual re-read prompted by
+# a desk question about whether the warehouse chart's timing was real).
+# [circular, "General" / Issuer description section]
+ANATOMY_ORIGINAL_HISTORY = {
+    "incorporation_date": "2023-01-20",       # as "Courchevel Warehouse Ltd." in Jersey, registered no. 147155
+    "original_entity_name": "Courchevel Warehouse Ltd.",
+    "renamed_date": "2023-03-14",             # renamed to "HPS Loan Management 2023-17, Ltd."
+    "original_closing_date": "2023-03-29",    # circular's own defined term: the "Original Closing Date"
+    "issuer_publishes_financial_statements": False,  # circular's own words: "The Issuer does not publish any financial statements."
+    "reporting_note": (
+        "Monthly investor reports are prepared (Collateral Administration Agreement, EU Securitisation Regulation "
+        "Article 7 disclosure) and distributed via a third-party reporting platform (Findox) and the Collateral "
+        "Trustee's own website -- both noteholder/investor-restricted, not publicly accessible."
+    ),
+}
+
 ANATOMY_DEAL = {
     # Dates: closing re-anchored to quarter 0; every other date is the
     # circular's own real gap from closing, in whole quarters (all landed
