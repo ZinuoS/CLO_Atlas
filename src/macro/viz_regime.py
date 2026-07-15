@@ -83,7 +83,7 @@ def viz_duration_bill():
     growth["date"] = pd.to_datetime(growth["date"])
     drawdown = read_parquet(DRAWDOWN_PATH) if DRAWDOWN_PATH.exists() else pd.DataFrame()
 
-    fig, ax = plt.subplots(figsize=(9, 5.5))
+    fig, ax = plt.subplots(figsize=(10.8, 5.5))
     end_values = []
     for i, ticker in enumerate(FEATURED_ORDER):
         grp = growth[growth["ticker"] == ticker].sort_values("date")
@@ -100,20 +100,26 @@ def viz_duration_bill():
     last_y = None
     for date, value, ticker, color in end_values:
         y = value if last_y is None else max(value, last_y + min_gap)
+        # Two different numbers, kept explicitly labeled so a recovered
+        # ticker's now-positive cumulative return can't be misread against
+        # its (necessarily negative) worst intra-window peak-to-trough dip:
+        # total_return is where the line actually ends up; peak_dd is how
+        # far it fell at its worst point before recovering, if it did.
+        total_return = value - 100
         note = ""
         if not drawdown.empty:
             row = drawdown[drawdown["ticker"] == ticker]
             if len(row):
                 dd = row.iloc[0]["max_drawdown"] * 100
                 recovered = row.iloc[0]["recovered"]
-                note = f"  {dd:+.0f}%, {'recov.' if recovered else 'not recov.'}"
-        direct_label(ax, date, y, f"{ticker}{note}", color=color)
+                note = f", dd {dd:+.0f}% {'recov.' if recovered else 'not recov.'}"
+        direct_label(ax, date, y, f"{ticker} {total_return:+.0f}% total{note}", color=color)
         last_y = y
 
     ax.axhline(100, color=INK_MUTED, linewidth=0.8, linestyle=":", zorder=0)
     format_date_axis(ax, interval_months=6)
     ax.set_ylabel("Growth of $100")
-    fig.subplots_adjust(right=0.82)
+    fig.subplots_adjust(right=0.74)
     png, svg = save_figure(
         fig, "viz_duration_bill",
         headline="Long duration paid the bill for the hiking cycle; floating-rate credit didn't.",

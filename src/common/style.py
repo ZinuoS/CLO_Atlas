@@ -147,14 +147,21 @@ def save_figure(fig, name: str, headline: str, subtitle: str = "", source: str =
     headline_lines = max(1, -(-len(headline) // headline_chars_per_line))
     subtitle_chars_per_line = max(fig_w * 11, 20)
     subtitle_lines = -(-len(subtitle) // subtitle_chars_per_line) if subtitle else 0
+    notes_chars_per_line = max(fig_w * 15, 25)
+    notes_lines = -(-len(notes) // notes_chars_per_line) if notes else 0
 
     headline_block_in = 0.22 * headline_lines + 0.08
     subtitle_block_in = 0.28 * subtitle_lines
     header_in = 0.22 + headline_block_in + subtitle_block_in
 
     # Leaves room below the plot area for axis tick labels + an axis title
-    # (most charts have one) before the source/byline band starts.
-    footer_in = 0.85 if notes else 0.7
+    # (most charts have one) before the source/byline band starts. notes
+    # scales with its own wrapped line count -- a flat reservation here
+    # (the previous behavior) either wasted space on a one-line note or let
+    # a longer one get clipped at the canvas edge, since the notes fig.text
+    # call below also needs `wrap=True` to actually wrap instead of
+    # overrunning the figure width.
+    footer_in = 0.7 + 0.17 * notes_lines if notes else 0.7
     top = 1 - header_in / fig_h
     bottom = footer_in / fig_h
     fig.subplots_adjust(top=top, bottom=bottom)
@@ -189,7 +196,7 @@ def save_figure(fig, name: str, headline: str, subtitle: str = "", source: str =
             fig.subplots_adjust(bottom=footer_in / fig_h)
 
     if notes:
-        fig.text(0.02, 0.30 / fig_h, notes, fontsize=7, color=INK_MUTED, ha="left", va="bottom", style="italic")
+        fig.text(0.02, 0.30 / fig_h, notes, fontsize=7, color=INK_MUTED, ha="left", va="bottom", style="italic", wrap=True)
 
     png_path = out_dir / f"{name}.png"
     svg_path = out_dir / f"{name}.svg"

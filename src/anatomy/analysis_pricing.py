@@ -40,7 +40,13 @@ def compute_wal_years(df_scenario: pd.DataFrame, tranche_name: str, quarters_per
     modeled horizon)."""
     col = f"stop_principal_{tranche_name}_principal" if tranche_name != "equity" else "stop_principal_equity_residual_principal"
     principal = df_scenario.get(col, pd.Series(0.0, index=df_scenario.index)).fillna(0.0)
-    quarters = df_scenario["period"].to_numpy()
+    # engine.py's period is 0-indexed per completed quarter (period=0 is the
+    # first full quarter after closing), but payments happen at the END of
+    # that quarter -- i.e. 0.25 years after closing, not 0. Using bare
+    # `period` as the time weight understated every tranche's WAL by exactly
+    # one quarter; +1 converts "quarters completed" to "quarters elapsed at
+    # payment date," matching standard quarterly-in-arrears CLO payment timing.
+    quarters = df_scenario["period"].to_numpy() + 1
     final_balance = df_scenario[f"balance_{tranche_name}"].iloc[-1]
     if final_balance > 1e-6:
         principal = principal.copy()

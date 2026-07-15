@@ -39,10 +39,13 @@ ATM_TAPE_PATH = config.INTERIM_DIR / "cef_atm_tape.parquet"
 NAV_DISCLOSURES_PATH = config.INTERIM_DIR / "cef_nav_disclosures.parquet"
 PRICES_PATH = config.INTERIM_DIR / "cef_prices.parquet"
 SPLITS_PATH = config.INTERIM_DIR / "cef_stock_splits.parquet"
+CLO_POSITIONS_PATH = config.INTERIM_DIR / "cef_clo_positions.parquet"
+BOOKVALUE_SNAPSHOT_PATH = config.INTERIM_DIR / "cef_bookvalue_snapshots.parquet"
 
 OUT_PREMIUM_HISTORY = config.FINAL_DIR / "capital_machine_premium_history.parquet"
 OUT_INCREMENTAL_ISSUANCE = config.FINAL_DIR / "capital_machine_incremental_issuance.parquet"
 OUT_ANNUAL_BUYING_POWER = config.FINAL_DIR / "capital_machine_annual_buying_power.parquet"
+OUT_LATEST_NAV_ESTIMATE = config.FINAL_DIR / "capital_machine_latest_nav_estimate.parquet"
 
 FUND = "OXLC"  # the only fund with both a real ATM tape and real NAV disclosures
 
@@ -98,6 +101,58 @@ def premium_history(fund: str = FUND) -> pd.DataFrame:
     merged["premium_discount"] = merged["market_price"] / merged["nav_mid_adj"] - 1
     return merged[["date", "nav_mid_adj", "market_price", "premium_discount", "shares_outstanding_adj"]] \
         .rename(columns={"nav_mid_adj": "nav_mid", "shares_outstanding_adj": "shares_outstanding"}).sort_values("date")
+
+
+def latest_nav_estimate(fund: str = FUND) -> dict | None:
+    """A fresher NAV-per-share estimate than `premium_history()` can offer,
+    for the gap after OXLC's most recent 424B3 "financial update" disclosure.
+
+    OXLC only discloses NAV-per-share in the "FINANCIAL UPDATE" paragraph of
+    an ATM 424B3/497 supplement (see scrape_nav_disclosures's docstring) --
+    when the fund slows or pauses ATM issuance, that trail goes stale even
+    though the fund keeps filing NPORT-P (portfolio holdings, quarterly,
+    required of every registered fund regardless of ATM activity) and its
+    share count keeps moving on the open market.
+
+    NPORT-P's <netAssets> total (fund-level, parsed onto every row by
+    src.common.nport.parse_nport_xml) divided by the fund's current
+    yfinance-reported share count approximates NAV/share as of the NPORT-P
+    filing's report period -- not an official per-share figure the fund
+    itself published, so this is TO-VERIFY methodology, kept separate from
+    the disclosure-based series in `premium_history()` rather than merged
+    into it silently."""
+    if not CLO_POSITIONS_PATH.exists() or not BOOKVALUE_SNAPSHOT_PATH.exists() or not PRICES_PATH.exists():
+        return None
+    positions = read_parquet(CLO_POSITIONS_PATH)
+    positions = positions[(positions["fund"] == fund) & positions["net_assets"].notna()]
+    if positions.empty:
+        return None
+    latest = positions.sort_values("period").iloc[-1]
+    period_date = pd.Timestamp(latest["period"])
+    net_assets = float(latest["net_assets"])
+
+    snapshot = read_parquet(BOOKVALUE_SNAPSHOT_PATH)
+    snapshot = snapshot[snapshot["ticker"] == fund].dropna(subset=["shares_outstanding"])
+    if snapshot.empty:
+        return None
+    shares_outstanding = float(snapshot.sort_values("date").iloc[-1]["shares_outstanding"])
+    nav_per_share = net_assets / shares_outstanding
+
+    prices = read_parquet(PRICES_PATH)
+    prices = prices[prices["ticker"] == fund].copy()
+    prices["date"] = pd.to_datetime(prices["date"])
+    prices["gap"] = (prices["date"] - period_date).abs()
+    if prices.empty:
+        return None
+    nearest = prices.sort_values("gap").iloc[0]
+    market_price = float(nearest["close"])
+
+    return {
+        "fund": fund, "period": period_date, "net_assets": net_assets,
+        "shares_outstanding": shares_outstanding, "nav_per_share": nav_per_share,
+        "market_price_date": nearest["date"], "market_price": market_price,
+        "premium_discount": market_price / nav_per_share - 1,
+    }
 
 
 def incremental_issuance(fund: str = FUND) -> pd.DataFrame:
@@ -178,11 +233,24 @@ def run() -> dict[str, pd.DataFrame]:
               "not a claim that 100% of proceeds are deployed into CLO equity the same year.",
     ))
 
+    nav_estimate = latest_nav_estimate()
+    if nav_estimate is not None:
+        write_parquet(pd.DataFrame([nav_estimate]), OUT_LATEST_NAV_ESTIMATE, Provenance(
+            parser="src.cef.analysis_capital_machine.latest_nav_estimate", source_urls=[],
+            notes="TO-VERIFY methodology: NPORT-P <netAssets> (fund-level total, official/SEC-filed) divided by "
+                  "yfinance's current shares-outstanding count -- an approximation, not an official per-share NAV "
+                  "figure OXLC itself published, kept separate from the disclosure-based premium_history series.",
+        ))
+        logger.info("latest_nav_estimate: %s premium/discount as of NPORT-P period %s (vs. disclosure-based "
+                     "series ending %s)", f"{nav_estimate['premium_discount']:+.1%}", nav_estimate["period"].date(),
+                     premium["date"].max().date() if len(premium) else "n/a")
+
     logger.info("premium_history=%d disclosures, incremental_issuance=%d intervals, "
                 "premium-vs-issuance correlation=%s, annual_buying_power=%d years",
                 len(premium), len(issuance), f"{corr:.2f}" if corr is not None else "n/a", len(buying_power))
     return {"premium_history": premium, "incremental_issuance": issuance,
-            "premium_vs_issuance": matched, "annual_buying_power": buying_power}
+            "premium_vs_issuance": matched, "annual_buying_power": buying_power,
+            "latest_nav_estimate": nav_estimate}
 
 
 def main():

@@ -115,6 +115,7 @@ PARTIES: tuple[tuple[str, dict[str, str]], ...] = (
     }),
     ("Rating agencies", {
         "Structuring & rating review": "assigns expected ratings to each class",
+        "Closing": "final ratings become effective",
         "Reinvestment": "surveils ratings as collateral migrates",
         "Amortization": "surveils ratings through paydown",
     }),
@@ -125,7 +126,7 @@ PARTIES: tuple[tuple[str, dict[str, str]], ...] = (
     }),
     ("Senior investors (AAA/AA)", {
         "Syndication & pricing": "buy at par, set the floating spread",
-        "Reinvestment": "receive interest; principal money-good",
+        "Reinvestment": "receive interest only; principal stays outstanding, protected by subordination",
         "Amortization": "receive amortizing principal first",
     }),
     ("Mezz investors (A-BB)", {

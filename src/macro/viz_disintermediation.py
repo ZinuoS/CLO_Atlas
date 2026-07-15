@@ -57,6 +57,17 @@ def viz_nonbank_share_stacked():
                 textcoords="offset points", fontsize=9.5, color="white", fontweight="bold",
                 ha="left", va="center")
 
+    # The pre-2008 average, called out explicitly, is what keeps the headline
+    # honest: nonbanks were already the majority lender for decades before
+    # the crisis, so the story is a further jump on top of an existing
+    # majority, not a bank-to-nonbank flip.
+    pre_crisis = df[(df["date"].dt.year >= 1990) & (df["date"].dt.year < 2008)]["nonbank_share"]
+    pre_crisis_avg = pre_crisis.mean() if len(pre_crisis) else None
+    if pre_crisis_avg is not None:
+        ax.annotate(f"1990-2007 avg: {pre_crisis_avg:.0%} nonbank", xy=(pd.Timestamp("1998-06-01"), 0.5),
+                    fontsize=8.5, color="black", ha="center", va="center",
+                    bbox=dict(boxstyle="round", fc="white", ec=INK_MUTED, alpha=0.85))
+
     _flag_landmarks(ax)
 
     ax.xaxis.set_major_locator(mdates.YearLocator(10))
@@ -65,11 +76,13 @@ def viz_nonbank_share_stacked():
     ax.set_ylabel("Share of nonfinancial corporate loans outstanding")
     png, svg = save_figure(
         fig, "viz_nonbank_share_stacked",
-        headline="Banks used to make most corporate loans. Now nonbanks do.",
-        subtitle="Share of nonfinancial corporate business loans held by depository institutions vs. all other lenders, 1945-present.",
+        headline="Nonbanks were already the majority lender. The 2008 crisis made it a supermajority.",
+        subtitle=f"Share of nonfinancial corporate business loans held by depository institutions vs. all other lenders, 1945-present -- "
+                 f"nonbank share averaged {pre_crisis_avg:.0%} from 1990-2007 and has averaged well above that since 2008.",
         source="clo-atlas, from FRED (Z.1 Financial Accounts, BOGZ1 series)",
         notes="\"Nonbanks\" = total loans (credit market debt minus debt securities) minus depository-institution loans; residual includes CLOs, "
-              "finance companies, BDCs, and other nonbank lenders combined, not CLOs alone.",
+              "finance companies, BDCs, and other nonbank lenders combined, not CLOs alone. Not a monotonic trend: nonbank share dipped to "
+              "roughly 45% in 1960 and hovered near parity for decades before the post-2008 structural jump shown here.",
     )
     logger.info("wrote %s / %s", png, svg)
     return png, svg

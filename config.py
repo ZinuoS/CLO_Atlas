@@ -462,6 +462,19 @@ ANATOMY_DEAL = {
     # Liabilities: sizes and spreads are the circular's own figures (with
     # the two collapses noted above); ratings are the circular's expected
     # ratings for the closest real class. [circular]
+    #
+    # spread_bps is the REFINANCING spread (this circular, dated 2025-06-06,
+    # resets pricing on the original March 2023 deal without changing deal
+    # mechanics — see scrape_circular.py's docstring). It is NOT the 2023
+    # new-issue (NI) spread the notes originally priced at. Searched for the
+    # original 2023-17 Class A/AAA NI spread via third-party NPORT-P holder
+    # disclosures (the same technique that works for finding other funds'
+    # HPS holdings) and web search on 2026-07-14; found only unrelated deals
+    # (a same-numbered GoldenTree CLO, other HPS vintages) and could not
+    # independently verify the 2023 figure within reasonable search effort
+    # -- every notebook/chart display of spread_bps is labeled "refi spread"
+    # rather than left ambiguous, and the NI spread is left unfilled (None)
+    # rather than guessed. [circular: refi spread; TO-VERIFY / not found: NI spread]
     "tranches": [
         {"name": "AAA", "size": 252_000_000, "spread_bps": 127, "rating": "Aaa/AAA", "pikable": False},
         {"name": "AA", "size": 52_000_000, "spread_bps": 165, "rating": "AA", "pikable": False},

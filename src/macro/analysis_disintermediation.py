@@ -3,9 +3,18 @@ corporate debt outstanding (slide 2: "Banks stepped back. A trillion-dollar
 market stepped in.").
 
 Both computed from src.macro.scrape_z1's FRED-mirrored Z.1 series, back to
-1945:Q4. Structural landmarks (Basel III finalization, 2013 leveraged-lending
-guidance, COVID) are annotated at viz time from config.EVENTS-style dates
-defined here, not fitted to the data.
+1945:Q4. Structural landmarks (2008 crisis, Basel III finalization, 2013
+leveraged-lending guidance, COVID) are annotated at viz time from
+config.EVENTS-style dates defined here, not fitted to the data.
+
+The full series is kept for context, but the honest read of it is NOT a
+monotonic "banks used to dominate, nonbanks took over" arc: nonbank share
+was already a majority (~55-60%) through 1990-2007, dipped as low as ~45%
+in 1960, and only jumped to its current ~75-80% level after the 2008
+financial crisis. The CLO-relevant story is that post-2008 jump, not an
+80-year secular trend -- see viz_disintermediation.py's headline, which is
+written to match this, not the longer, weaker claim the raw date range
+alone would suggest.
 """
 from __future__ import annotations
 
@@ -26,6 +35,7 @@ OUT_LOANS_VS_BONDS = config.FINAL_DIR / "macro_loans_vs_bonds_mix.parquet"
 # Point-in-time structural landmarks for the disintermediation chart, each a
 # citable regulatory/market event rather than a data-derived breakpoint.
 STRUCTURAL_LANDMARKS = [
+    {"date": "2008-09-01", "label": "2008 financial crisis"},
     {"date": "2013-03-01", "label": "2013 leveraged-lending guidance"},
     {"date": "2017-12-01", "label": "Basel III finalized ('Basel IV')"},
     {"date": "2020-03-01", "label": "COVID-19 shock"},

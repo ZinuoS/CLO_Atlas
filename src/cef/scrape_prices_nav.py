@@ -88,6 +88,11 @@ def scrape_bookvalue_snapshot(tickers: list[str] | None = None) -> pd.DataFrame:
             "market_price": fast.get("lastPrice"),
             "price_to_book": info.get("priceToBook"),
             "trailing_dividend_yield": info.get("dividendYield"),
+            # Current share count, same info payload -- lets a caller combine
+            # this with a fund-level total-net-assets figure (e.g. from the
+            # latest NPORT-P filing) for a NAV-per-share estimate fresher
+            # than a fund's own periodic "financial update" disclosures.
+            "shares_outstanding": info.get("sharesOutstanding"),
         })
     return pd.DataFrame(rows)
 

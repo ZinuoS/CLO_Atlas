@@ -30,7 +30,7 @@ def build_capital_structure_chart(deal: Deal, out_dir: Path | None = None) -> Pa
         width = row["detachment_pct"] - row["attachment_pct"]
         ax.barh(0, width, left=left, color=color, edgecolor=BG, linewidth=1.5, height=0.6)
         label_color = BG if color in (WARM_GRAY[0], "#9A5B5B", ACCENT) else INK
-        spread = f"+{row['spread_bps']:.0f}bps" if row["spread_bps"] == row["spread_bps"] else "residual"
+        spread = f"+{row['spread_bps']:.0f}bps refi" if row["spread_bps"] == row["spread_bps"] else "residual"
         fontsize = 8 if width > 8 else 6.4
         ax.text(left + width / 2, 0, f"{row['name']}\n{row['rating'] or ''}\n{spread}", ha="center", va="center",
                 fontsize=fontsize, color=label_color)
@@ -45,8 +45,11 @@ def build_capital_structure_chart(deal: Deal, out_dir: Path | None = None) -> Pa
     png, svg = save_figure(
         fig, "pricing_capital_structure",
         headline="The capital structure: who's protected, and what they're paid for it.",
-        subtitle="Subordination (left edge) is how much of the pool has to lose value before that class takes a loss.",
-        source=f"structure illustrative, parameters adapted from {deal.citation.get('deal_name', '')}, public offering circular",
+        subtitle="Subordination (left edge) is how much of the pool has to lose value before that class takes a loss. "
+                 "Spreads shown are the 2025 REFINANCING price, not the deal's original 2023 new-issue spread.",
+        source=f"structure illustrative, parameters adapted from {deal.citation.get('deal_name', '')}, public offering circular (refinancing)",
+        notes="Refi spreads only: the original 2023 new-issue spread was searched for (third-party NPORT-P holder "
+              "disclosures, web search) but could not be independently verified and is not shown rather than guessed.",
         out_dir=out_dir,
     )
     return png

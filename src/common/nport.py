@@ -38,6 +38,7 @@ _TAG_PATTERNS = {
     "annualizedRt": re.compile(r"<annualizedRt>(.*?)</annualizedRt>"),
 }
 _PERIOD_PATTERN = re.compile(r"<repPdDate>(.*?)</repPdDate>")
+_NET_ASSETS_PATTERN = re.compile(r"<netAssets>(.*?)</netAssets>")
 
 CLO_ASSET_CATEGORIES = {"ABS-CBDO"}
 _CLO_NAME_PATTERN = re.compile(r"\bCLO\b", re.IGNORECASE)
@@ -62,9 +63,16 @@ def parse_nport_xml(xml_text: str, fund: str) -> pd.DataFrame:
     period_match = _PERIOD_PATTERN.search(xml_text)
     period = period_match.group(1) if period_match else None
 
+    # Fund-level total net assets (Part B, outside any <invstOrSec> block) --
+    # stamped onto every position row so a caller only interested in the
+    # fund-level figure (e.g. a NAV-per-share estimate) doesn't need a
+    # second fetch/parse of the same filing.
+    net_assets_match = _NET_ASSETS_PATTERN.search(xml_text)
+    net_assets = float(net_assets_match.group(1)) if net_assets_match else None
+
     records = []
     for block in _INVSTORSEC_PATTERN.findall(xml_text):
-        row = {"fund": fund, "period": period}
+        row = {"fund": fund, "period": period, "net_assets": net_assets}
         for field, pattern in _TAG_PATTERNS.items():
             m = pattern.search(block)
             row[field] = m.group(1).strip() if m else None
