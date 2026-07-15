@@ -31,13 +31,28 @@ def build_ledger() -> pd.DataFrame:
 
     premium_path = config.FINAL_DIR / "capital_machine_premium_history.parquet"
     if premium_path.exists():
-        premium = read_parquet(premium_path)
+        premium = read_parquet(premium_path).sort_values("date")
         if len(premium):
-            rows.append(_row(f"Every disclosed premium is positive, range {premium['premium_discount'].min()*100:.0f}% to "
-                              f"{premium['premium_discount'].max()*100:.0f}%",
-                              "analysis_capital_machine.premium_history(), rescaled for OXLC's 2025-09-08 1-for-5 reverse split",
-                              "n/a", "VERIFIED"))
+            trailing_negative = 0
+            for v in premium["premium_discount"].iloc[::-1]:
+                if v < 0:
+                    trailing_negative += 1
+                else:
+                    break
+            rows.append(_row(f"Disclosed premium/discount ranges {premium['premium_discount'].min()*100:.0f}% to "
+                              f"{premium['premium_discount'].max()*100:.0f}%; every observation since "
+                              f"{premium['date'].iloc[-trailing_negative].strftime('%b %Y') if trailing_negative else 'n/a'} "
+                              f"has been a discount ({trailing_negative} consecutive readings)",
+                              "analysis_capital_machine.premium_history(), merging OXLC's 424B3 ATM supplements and its own "
+                              "NAV-update press releases, rescaled for OXLC's 2025-09-08 1-for-5 reverse split",
+                              str(premium["date"].max()), "VERIFIED"))
             rows.append(_row("Bug caught and fixed: unrescaled comparison against pre-split NAV produced a nonsense 813% 'premium'",
+                              "see analysis_capital_machine.py docstring and test_analysis_capital_machine.py's regression test",
+                              "n/a", "VERIFIED"))
+            rows.append(_row("Second bug caught and fixed: a press release published after the split restates its own prior-"
+                              "period comparison NAV on the current share basis already; rescaling by as-of date (correct for "
+                              "the 424B3 channel) double-counted the split for press-release rows, inflating one point 5x "
+                              "($20.60 -> $103.00). Fixed by keying the rescale off each figure's publication date instead.",
                               "see analysis_capital_machine.py docstring and test_analysis_capital_machine.py's regression test",
                               "n/a", "VERIFIED"))
 

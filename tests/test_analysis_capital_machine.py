@@ -8,6 +8,10 @@ from src.cef import analysis_capital_machine as acm
 def _patch_paths(tmp_path, monkeypatch):
     monkeypatch.setattr(acm, "SPLITS_PATH", tmp_path / "splits.parquet")
     monkeypatch.setattr(acm, "NAV_DISCLOSURES_PATH", tmp_path / "nav.parquet")
+    # Points at a file that doesn't exist so _load_nav_press_releases returns
+    # empty, keeping these tests isolated to the 424B3 channel they were
+    # written against rather than picking up the real scraped press releases.
+    monkeypatch.setattr(acm, "NAV_PRESS_RELEASES_PATH", tmp_path / "press_releases.parquet")
     monkeypatch.setattr(acm, "PRICES_PATH", tmp_path / "prices.parquet")
     return tmp_path
 
@@ -34,8 +38,8 @@ def test_premium_history_rescales_pre_split_nav_to_avoid_absurd_premium(tmp_path
     splits = pd.DataFrame([{"ticker": "OXLC", "split_date": pd.Timestamp("2025-09-08"), "ratio": 0.2}])
     splits.to_parquet(acm.SPLITS_PATH, index=False)
 
-    nav = pd.DataFrame([{"ticker": "OXLC", "nav_as_of": "April 30, 2020", "nav_low": 2.67, "nav_high": 2.77,
-                         "nav_mid": 2.72, "shares_outstanding": 87_000_000.0}])
+    nav = pd.DataFrame([{"ticker": "OXLC", "nav_as_of": "April 30, 2020", "filing_date": "2020-05-06",
+                         "nav_low": 2.67, "nav_high": 2.77, "nav_mid": 2.72, "shares_outstanding": 87_000_000.0}])
     nav.to_parquet(acm.NAV_DISCLOSURES_PATH, index=False)
 
     prices = pd.DataFrame([{"ticker": "OXLC", "date": pd.Timestamp("2020-04-30"), "close": 24.85}])
@@ -46,6 +50,34 @@ def test_premium_history_rescales_pre_split_nav_to_avoid_absurd_premium(tmp_path
     row = result.iloc[0]
     assert row["nav_mid"] == pytest.approx(13.6)  # 2.72 / 0.2
     assert row["premium_discount"] == pytest.approx(0.827, abs=0.01)  # ~83%, not ~813%
+
+
+def test_premium_history_press_release_keys_split_adjustment_on_release_not_asof_date(tmp_path, monkeypatch):
+    # Regression: a press release published AFTER the reverse split restates
+    # its own prior-period comparison NAV ("...compared with a NAV per share
+    # on <date> of $X") on the CURRENT, post-split share basis already --
+    # rescaling by as-of date (like the 424B3 channel needs) double-counts
+    # the split and produces a nonsense 5x-inflated NAV. This is the exact
+    # real case that surfaced the bug: a Nov 2025 press release's June 30,
+    # 2025 comparison figure of $20.60 turning into $103.00.
+    splits = pd.DataFrame([{"ticker": "OXLC", "split_date": pd.Timestamp("2025-09-08"), "ratio": 0.2}])
+    splits.to_parquet(acm.SPLITS_PATH, index=False)
+
+    press_releases = pd.DataFrame([{
+        "as_of_date": pd.Timestamp("2025-06-30"), "nav_low": 20.60, "nav_high": 20.60, "nav_mid": 20.60,
+        "figure_type": "quarterly_actual", "release_date": "2025-11-03",  # AFTER the split
+        "source_url": "https://example.com/pr", "shares_outstanding": float("nan"),
+    }])
+    press_releases.to_parquet(acm.NAV_PRESS_RELEASES_PATH, index=False)
+
+    prices = pd.DataFrame([{"ticker": "OXLC", "date": pd.Timestamp("2025-06-30"), "close": 21.00}])
+    prices.to_parquet(acm.PRICES_PATH, index=False)
+
+    result = acm.premium_history(fund="OXLC")
+    assert len(result) == 1
+    row = result.iloc[0]
+    assert row["nav_mid"] == pytest.approx(20.60)  # NOT 20.60 / 0.2 = 103.00
+    assert row["premium_discount"] == pytest.approx(0.0194, abs=0.001)  # ~2%, not -79%
 
 
 def test_incremental_issuance_diffs_within_era_not_across(tmp_path, monkeypatch):

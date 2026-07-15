@@ -2,17 +2,22 @@
 Oxford Lane at the center).
 
 The mechanism, each link measured from real disclosures, not asserted:
-  1. OXLC's 424B3 "FINANCIAL UPDATE" paragraphs disclose a preliminary NAV-
-     per-share estimate at scattered month-ends (`scrape_capital_actions.
-     scrape_nav_disclosures`) — joined here against OXLC's own daily market
-     price (Section 2's `cef_prices.parquet`) to compute a REAL historical
-     premium/discount at each disclosure date. This is richer than Section
-     2's own premium/discount table, which is limited to a single current-
-     day book-value snapshot (yfinance has no historical NAV for these
+  1. Two independent, real NAV disclosure channels are merged into one
+     series: OXLC's 424B3 "FINANCIAL UPDATE" paragraphs (`scrape_capital_
+     actions.scrape_nav_disclosures`, tied to ATM registration activity so
+     it goes quiet whenever issuance does) and OXLC's own monthly/quarterly
+     NAV-update press releases (`scrape_nav_press_releases`, discovered
+     2026-07-15 -- a GlobeNewswire-distributed channel independent of ATM
+     activity, so it stays current even through the mid-2025 issuance
+     lull). Both are joined against OXLC's own daily market price (Section
+     2's `cef_prices.parquet`) to compute a REAL historical premium/
+     discount at each disclosure date. This is richer than Section 2's own
+     premium/discount table, which is limited to a single current-day
+     book-value snapshot (yfinance has no historical NAV for these
      equity-classified tickers) — see that module's docstring.
-  2. The same filings' "prior sales" paragraphs give a real ATM issuance
-     tape (`cef_atm_tape.parquet`): cumulative shares sold and gross/net
-     proceeds since each registration statement's start date.
+  2. The same 424B3 filings' "prior sales" paragraphs give a real ATM
+     issuance tape (`cef_atm_tape.parquet`): cumulative shares sold and
+     gross/net proceeds since each registration statement's start date.
   3. This module derives INCREMENTAL (not cumulative) shares/proceeds per
      filing interval, aligns each interval's END with the nearest NAV
      disclosure to get that period's approximate prevailing premium, and
@@ -37,6 +42,7 @@ logger = logging.getLogger("clo_atlas.cef.analysis_capital_machine")
 
 ATM_TAPE_PATH = config.INTERIM_DIR / "cef_atm_tape.parquet"
 NAV_DISCLOSURES_PATH = config.INTERIM_DIR / "cef_nav_disclosures.parquet"
+NAV_PRESS_RELEASES_PATH = config.INTERIM_DIR / "cef_oxlc_nav_press_releases.parquet"
 PRICES_PATH = config.INTERIM_DIR / "cef_prices.parquet"
 SPLITS_PATH = config.INTERIM_DIR / "cef_stock_splits.parquet"
 CLO_POSITIONS_PATH = config.INTERIM_DIR / "cef_clo_positions.parquet"
@@ -69,25 +75,79 @@ def _cumulative_split_factor(ticker: str, as_of: pd.Timestamp) -> float:
     return factor
 
 
-def premium_history(fund: str = FUND) -> pd.DataFrame:
-    """Real historical premium/discount at each disclosed NAV date —
-    market close price (not dividend-adjusted, but IS split-adjusted by
-    Yahoo regardless — see `_cumulative_split_factor`) vs. the disclosed
-    NAV midpoint, rescaled onto the same post-split basis, nearest trading
-    day."""
-    if not NAV_DISCLOSURES_PATH.exists() or not PRICES_PATH.exists():
-        logger.warning("missing NAV disclosures or price history; premium_history is empty")
-        return pd.DataFrame(columns=["date", "nav_mid", "market_price", "premium_discount"])
-
+def _load_nav_disclosures(fund: str) -> pd.DataFrame:
+    """424B3 ATM-supplement 'financial update' paragraphs -- real, but goes
+    quiet whenever ATM issuance does (see module docstring). `reference_date`
+    (the filing date) is what split-adjustment should key off of, not the
+    as-of date -- see `premium_history`'s docstring on why."""
+    if not NAV_DISCLOSURES_PATH.exists():
+        return pd.DataFrame(columns=["date", "reference_date", "nav_mid", "shares_outstanding", "nav_source"])
     nav = read_parquet(NAV_DISCLOSURES_PATH)
     nav = nav[nav["ticker"] == fund].dropna(subset=["nav_mid"]).copy()
     if nav.empty:
-        return pd.DataFrame(columns=["date", "nav_mid", "market_price", "premium_discount"])
+        return pd.DataFrame(columns=["date", "reference_date", "nav_mid", "shares_outstanding", "nav_source"])
     nav["date"] = pd.to_datetime(nav["nav_as_of"])
+    nav["reference_date"] = pd.to_datetime(nav["filing_date"])
+    nav["nav_source"] = "424B3 ATM supplement"
+    return nav[["date", "reference_date", "nav_mid", "shares_outstanding", "nav_source"]]
+
+
+def _load_nav_press_releases(fund: str) -> pd.DataFrame:
+    """OXLC's own monthly/quarterly NAV-update press releases (GlobeNewswire)
+    -- real, independent of ATM activity, current through mid-2026 (see
+    scrape_nav_press_releases.py). Only meaningful for OXLC; other funds
+    don't have this scraper built. `reference_date` (the release date) is
+    what split-adjustment should key off of: a release published AFTER the
+    2025-09-08 reverse split restates even its own PRIOR-period comparison
+    figures ("compared with a NAV per share on <date> of $X") on the
+    current, post-split share basis -- confirmed by checking the actual
+    trajectory of values across the split date for a discontinuity, and
+    finding none, once keyed on reference_date instead of the as-of date."""
+    if fund != "OXLC" or not NAV_PRESS_RELEASES_PATH.exists():
+        return pd.DataFrame(columns=["date", "reference_date", "nav_mid", "shares_outstanding", "nav_source"])
+    pr = read_parquet(NAV_PRESS_RELEASES_PATH)
+    if pr.empty:
+        return pd.DataFrame(columns=["date", "reference_date", "nav_mid", "shares_outstanding", "nav_source"])
+    pr = pr.rename(columns={"as_of_date": "date"}).copy()
+    pr["date"] = pd.to_datetime(pr["date"])
+    pr["reference_date"] = pd.to_datetime(pr["release_date"])
+    pr["nav_source"] = pr["figure_type"].map({
+        "monthly_estimate": "OXLC press release (monthly estimate)",
+        "quarterly_actual": "OXLC press release (quarterly actual)",
+    }).fillna("OXLC press release")
+    return pr[["date", "reference_date", "nav_mid", "shares_outstanding", "nav_source"]]
+
+
+def premium_history(fund: str = FUND) -> pd.DataFrame:
+    """Real historical premium/discount at each disclosed NAV date, merging
+    two independent real disclosure channels (see module docstring) —
+    market close price (not dividend-adjusted, but IS split-adjusted by
+    Yahoo regardless — see `_cumulative_split_factor`) vs. the disclosed
+    NAV midpoint, rescaled onto the same post-split basis, nearest trading
+    day. Where both channels disclose the same date, the press release
+    figure wins (it's OXLC's more complete, investor-facing number)."""
+    if not PRICES_PATH.exists():
+        logger.warning("missing price history; premium_history is empty")
+        return pd.DataFrame(columns=["date", "nav_mid", "market_price", "premium_discount"])
+
+    atm_nav = _load_nav_disclosures(fund)
+    pr_nav = _load_nav_press_releases(fund)
+    nav = pd.concat([df for df in (atm_nav, pr_nav) if not df.empty], ignore_index=True) \
+        if not (atm_nav.empty and pr_nav.empty) else atm_nav
+    if nav.empty:
+        logger.warning("no NAV disclosures from either channel; premium_history is empty")
+        return pd.DataFrame(columns=["date", "nav_mid", "market_price", "premium_discount"])
+    # Press-release figures win on an exact-date collision (see docstring).
+    nav["_source_rank"] = nav["nav_source"].str.startswith("OXLC press release").astype(int)
+    nav = nav.sort_values("_source_rank").drop_duplicates(subset="date", keep="last").drop(columns="_source_rank")
+
     # Rescale each disclosure onto today's share basis: dividing by the
     # split factor accounts for a later reverse split (fewer, pricier
-    # shares) the same way Yahoo's price series already has been.
-    split_factor = nav["date"].apply(lambda d: _cumulative_split_factor(fund, d))
+    # shares) the same way Yahoo's price series already has been. Keyed on
+    # reference_date (when the figure was actually published), not the
+    # as-of date -- a figure published after the split already expresses
+    # even a pre-split as-of date on the current share basis.
+    split_factor = nav["reference_date"].apply(lambda d: _cumulative_split_factor(fund, d))
     nav["nav_mid_adj"] = nav["nav_mid"] / split_factor
     nav["shares_outstanding_adj"] = nav["shares_outstanding"] * split_factor
 
@@ -99,7 +159,7 @@ def premium_history(fund: str = FUND) -> pd.DataFrame:
                             on="date", direction="nearest", tolerance=pd.Timedelta(days=10))
     merged = merged.dropna(subset=["close"]).rename(columns={"close": "market_price"})
     merged["premium_discount"] = merged["market_price"] / merged["nav_mid_adj"] - 1
-    return merged[["date", "nav_mid_adj", "market_price", "premium_discount", "shares_outstanding_adj"]] \
+    return merged[["date", "nav_mid_adj", "market_price", "premium_discount", "shares_outstanding_adj", "nav_source"]] \
         .rename(columns={"nav_mid_adj": "nav_mid", "shares_outstanding_adj": "shares_outstanding"}).sort_values("date")
 
 
