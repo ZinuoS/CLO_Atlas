@@ -56,8 +56,10 @@ def build_warehouse_ramp_chart(deal: Deal, out_dir: Path | None = None) -> Path:
                  f"CLO equity tranche) earns \\${total_carry/1e6:.1f}mm of carry before closing, then largely rolls "
                  "into that same equity tranche.",
         source=f"structure illustrative, parameters adapted from {deal.citation.get('deal_name', '')}, public offering circular",
-        notes="TO-VERIFY: warehouse lending terms (advance rate, financing spread, ramp shape) are private and never "
-              "disclosed in a public offering circular — every figure here is a market-standard convention.",
+        notes="TO-VERIFY, confirmed against real desk practice: warehouse lending terms (advance rate, financing "
+              "spread, ramp shape) are private and never disclosed in a public offering circular. The cumulative "
+              "carry figure at right is derived from those TO-VERIFY inputs (ramped loan income minus financing "
+              "cost), not an independently disclosed number — a live desk would never see this published either.",
         out_dir=out_dir,
     )
     return png
